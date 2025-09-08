@@ -2,3 +2,5 @@ live-boot
 live-config
 live-config-systemd
 systemd-sysv
+ca-certificates
+apt-transport-https
