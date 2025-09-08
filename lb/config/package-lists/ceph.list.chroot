@@ -1,7 +1,7 @@
 ceph
+ceph-common
 ceph-fuse
 ceph-mds
-ceph-common
-ceph-osd
 ceph-mgr-dashboard
 ceph-mgr-modules-core
+ceph-osd
