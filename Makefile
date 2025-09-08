@@ -12,7 +12,7 @@ configure:
 					2>&1 | tee configure.log
 
 build: configure
-	cd lb && $(LB) build 2>&1 | tee build.log
+	cd lb && sudo $(LB) build 2>&1 | tee build.log
 
 clean:
 	cd lb && $(LB) clean
