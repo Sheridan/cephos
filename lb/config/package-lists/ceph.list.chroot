@@ -1,0 +1,7 @@
+ceph
+ceph-fuse
+ceph-mds
+ceph-common
+ceph-osd
+ceph-mgr-dashboard
+ceph-mgr-modules-core
