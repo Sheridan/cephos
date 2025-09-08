@@ -15,7 +15,7 @@ build: configure
 	cd lb && sudo $(LB) build 2>&1
 
 clean:
-	cd lb && $(LB) clean
+	cd lb && sudo $(LB) clean
 
 purge:
-	cd lb && $(LB) clean --purge
+	cd lb && sudo $(LB) clean --purge
