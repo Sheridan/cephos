@@ -10,7 +10,7 @@ configure:
 						--hdd-label CephOS \
 						--system live \
 						--distribution bookworm \
-						--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl" \
+						--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl"
 
 build: configure
 	cd lb && sudo $(LB) build 2>&1
