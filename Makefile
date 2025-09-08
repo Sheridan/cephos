@@ -9,6 +9,7 @@ configure:
 						--chroot-squashfs-compression-type lz4 \
 						--hdd-label CephOS \
 						--system live \
+						--distribution bookworm \
 					2>&1 | tee configure.log
 
 build: configure
