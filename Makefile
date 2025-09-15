@@ -1,22 +1,16 @@
-.PHONY: build clean
-LB := lb --color --verbose
+.PHONY: build run clean
 
-configure:
-	cd lb && $(LB) config \
-						--architecture amd64 \
-						--binary-images hdd \
-						--apt-indices false \
-						--chroot-squashfs-compression-type lz4 \
-						--hdd-label CephOS \
-						--system live \
-						--distribution bookworm \
-						--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl"
+CURRENT_UID := $(shell id -u)
+CURRENT_GID := $(shell id -g)
+DOCKER_COMPOSE := CURRENT_UID=$(CURRENT_UID) CURRENT_GID=$(CURRENT_GID) docker compose
+WORK_DIR := tmp/work
 
-build: configure
-	cd lb && sudo $(LB) build 2>&1
+build:
+	mkdir -p $(WORK_DIR)
+	cd container && $(DOCKER_COMPOSE) build
+
+run: build
+	cd container && $(DOCKER_COMPOSE) up
 
 clean:
-	cd lb && sudo $(LB) clean
-
-purge:
-	cd lb && sudo $(LB) clean --purge
+	cd container && $(DOCKER_COMPOSE) down --volumes --remove-orphans

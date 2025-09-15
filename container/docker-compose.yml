@@ -1,0 +1,15 @@
+services:
+  cephfs_build:
+    container_name: cephfs_build
+    privileged: true
+    tty: true
+    stdin_open: true
+    user: "${CURRENT_UID}:${CURRENT_GID}"
+    build:
+      context: .
+      args:
+        USER_ID: ${CURRENT_UID}
+        GROUP_ID: ${CURRENT_GID}
+    volumes:
+      - ../tmp/work:/home/worker/work
+      - ../:/home/worker/project
