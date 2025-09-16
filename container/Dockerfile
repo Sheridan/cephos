@@ -9,13 +9,16 @@ RUN apt-get update && \
         bash \
         ca-certificates \
         curl \
+        debootstrap \
         fdisk \
         git \
         gpg \
         live-build \
         make \
         rsync \
+        squashfs-tools \
         sudo \
+        syslinux \
         wget \
     && rm -rf /var/lib/apt/lists/*
 

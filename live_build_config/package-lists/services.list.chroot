@@ -1,2 +1,4 @@
 chrony
 openssh-server
+systemd
+systemd-sysv

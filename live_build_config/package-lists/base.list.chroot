@@ -1,4 +1,13 @@
+adduser
+coreutils
+initramfs-tools
 live-boot
 live-config
 live-config-systemd
-systemd-sysv
+login
+passwd
+procps
+sudo
+udev
+user-setup
+util-linux

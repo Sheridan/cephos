@@ -4,12 +4,14 @@
 
 set -euo pipefail
 
-if [ "$(id -u)" -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]
+then
   echo "Run as root"
   exit 1
 fi
 
-if [ $# -ne 1 ]; then
+if [ $# -ne 1 ]
+then
   echo "Usage: $0 <usb-device>  (for example: /dev/sdX)"
   exit 1
 fi
@@ -20,7 +22,8 @@ USB="$1"
 ARCHIVE_LINE=$(awk '/^__IMG_BELOW__/ {print NR + 1; exit 0;}' "$0")
 IMG=$(mktemp)
 
-cleanup() {
+cleanup()
+{
   rm -f "$IMG"
 }
 trap cleanup EXIT
@@ -53,7 +56,7 @@ echo "/ union" > "$MNTDIR/persistence.conf"
 umount "$MNTDIR"
 rmdir "$MNTDIR"
 
-echo ">>> Done! Bootable USB with persistence is ready."
+echo ">>> Done."
 exit 0
 
 __IMG_BELOW__

@@ -1,0 +1,14 @@
+curl
+dnsutils
+ethtool
+iftop
+ifupdown
+iperf
+iproute2
+iptraf-ng
+isc-dhcp-client
+mtr
+net-tools
+net-tools
+tcpdump
+wget

@@ -47,23 +47,35 @@ function configure()
 {
 	cd ${live_build_dir}
 	${live_build} config \
+						--apt-indices false \
 						--architecture amd64 \
 						--binary-images hdd \
-						--apt-indices false \
 						--chroot-squashfs-compression-type lz4 \
+						--debian-installer live \
+						--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl --variant=minbase" \
+						--distribution bookworm \
 						--hdd-label CephOS \
 						--system live \
-						--distribution bookworm \
-						--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl"
+  					--apt-recommends false \
+    				--bootappend-live "boot=live components username=cephos noautologin persistence"
 }
 
 function build()
 {
+	local result_img_file="${live_build_dir}/live-image-amd64.img"
+	local result_run_file="${work_dir}/cephos_installer.run"
 	cd ${live_build_dir}
   sudo ${live_build} build
-	cp -f "${live_build_dir}/live-image-amd64.img" "${work_dir}/cephos_root.img"
-	cat ${project_dir}/tools/run_header.sh "${work_dir}/cephos_root.img" > "${work_dir}/cephos_installer.run"
+	cat ${project_dir}/tools/run_header.sh "${result_img_file}" > "${result_run_file}"
+	chmod oga+x "${result_run_file}"
+	ls -lah "${result_run_file}"
 }
+
+function clean()
+{
+	sudo rm -rf ${live_build_dir}
+}
+trap clean EXIT SIGINT SIGTERM
 
 prepare_config
 configure
