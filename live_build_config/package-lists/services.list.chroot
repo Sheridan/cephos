@@ -1,4 +1,5 @@
 chrony
+dbus
 openssh-server
 systemd
 systemd-sysv

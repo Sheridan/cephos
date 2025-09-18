@@ -1,0 +1,26 @@
+Protocol 2
+Port 22
+AddressFamily any
+
+SyslogFacility AUTH
+LogLevel INFO
+
+LoginGraceTime 30
+PermitRootLogin without-password
+StrictModes yes
+MaxAuthTries 3
+MaxSessions 8
+UsePAM yes
+PasswordAuthentication yes
+PubkeyAuthentication yes
+
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+PrintMotd no
+PrintLastLog yes
+MaxStartups 2:50:10
+
+Subsystem sftp /bin/true
+
+Compression yes
+PermitTTY yes

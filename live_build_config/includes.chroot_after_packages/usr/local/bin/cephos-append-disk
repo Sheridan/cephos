@@ -1,0 +1,47 @@
+#!/bin/bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -d <block_device>
+Example: $0 -d /dev/sdb
+EOF
+
+set -euo pipefail
+# --- options parse ---
+block_device=""
+while getopts ":d:hv" opt
+do
+  case ${opt} in
+    d) block_device="${OPTARG}" ;;
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+
+if [[ -z "$block_device" ]]
+then
+  help
+  exit 1
+fi
+
+if [ ! -b "$block_device" ]
+then
+  log_err "Block device ${block_device} not exists or not a valid block device"
+  exit 1
+fi
+# --- options parse ---
+
+log_info "Appending disk ${block_device} to mon ${mon_id}"
+
+# --- Prepare and create OSD ---
+log_info "Creating OSD on ${block_device}"
+set_file_rights
+sudo ceph-volume \
+    lvm create \
+  --data "${block_device}" \
+  --objectstore bluestore
+set_file_rights
+log_info "OSD successfully created on ${block_device}"

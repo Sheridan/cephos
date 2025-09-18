@@ -1,15 +1,15 @@
-.PHONY: build run clean
+.PHONY: build build_container clean
 
 CURRENT_UID := $(shell id -u)
 CURRENT_GID := $(shell id -g)
 DOCKER_COMPOSE := CURRENT_UID=$(CURRENT_UID) CURRENT_GID=$(CURRENT_GID) docker compose
 WORK_DIR := tmp/work
 
-build:
+build_container:
 	mkdir -p $(WORK_DIR)
 	cd container && $(DOCKER_COMPOSE) build
 
-run: build
+build: build_container
 	cd container && $(DOCKER_COMPOSE) up
 
 clean:

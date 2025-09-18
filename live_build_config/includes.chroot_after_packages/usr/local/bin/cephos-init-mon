@@ -1,0 +1,53 @@
+#!/bin/bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -P <public_ip>
+Example: $0 -P 10.0.0.100
+EOF
+
+set -euo pipefail
+
+# --- options parse ---
+public_ip=""
+while getopts ":P:hv" opt
+do
+  case ${opt} in
+    P) public_ip="${OPTARG}" ;;
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+
+if [[ -z "$public_ip" ]]
+then
+  help
+  exit 1
+fi
+# --- options parse ---
+
+log_info "Init mon ${mon_id} with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
+
+set_environment "PUBLIC_IP" "${public_ip}"
+
+# --- Check & create MON if not exists ---
+if ! sudo test -d "${mon_data_dir}"
+then
+  log_info "MON not found on this host, creating new MON"
+  sudo monmaptool --create --add ${mon_id} ${public_ip} --fsid ${ceph_fsid} ${ceph_conf_dir}/monmap --enable-all-features
+  set_file_rights
+  sudo mkdir -p "${mon_data_dir}"
+  sudo ceph-mon --mkfs -i "${mon_id}" \
+    --monmap "${ceph_conf_dir}/monmap" \
+    --keyring "${ceph_conf_dir}/ceph.mon.keyring" \
+    --conf "${ceph_main_conf}"
+  sudo systemctl enable --now ceph-mon@${mon_id}.service
+  # sudo ceph auth get-or-create client.admin mon 'allow *' osd 'allow *' mgr 'allow *' -o /etc/ceph/ceph.client.admin.keyring
+  set_file_rights
+
+else
+  log_verbose "MON already exists on this host"
+fi

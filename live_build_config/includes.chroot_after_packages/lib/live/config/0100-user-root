@@ -1,7 +1,0 @@
-#!/bin/sh
-#
-# Генерация случайного пароля root на каждый старт
-
-PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
-echo "root:$PASS" | chpasswd
-chsh -s /bin/bash root

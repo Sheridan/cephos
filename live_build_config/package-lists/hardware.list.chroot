@@ -1,0 +1,14 @@
+dmidecode
+firmware-amd-graphics
+firmware-linux
+firmware-linux-free
+firmware-linux-nonfree
+firmware-misc-nonfree
+firmware-realtek
+hdparm
+hwinfo
+lm-sensors
+lshw
+pciutils
+smartmontools
+usbutils

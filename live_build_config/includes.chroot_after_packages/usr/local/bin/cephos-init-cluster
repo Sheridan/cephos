@@ -1,0 +1,74 @@
+#!/bin/bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -p <public_networkwork> -c <cluster_network>
+Example: $0 -p 10.10.0.0/24 -c 10.20.0.0/24 -n storage
+EOF
+
+set -euo pipefail
+
+# --- options parse ---
+public_network=""
+cluster_network=""
+while getopts ":p:c:n:hv" opt
+do
+  case ${opt} in
+    p) public_network="${OPTARG}" ;;
+    c) cluster_network="${OPTARG}" ;;
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+
+if [[ -z "$public_network" || -z "$cluster_network"  ]]
+then
+  help
+  exit 1
+fi
+# --- options parse ---
+
+check_user "cephos"
+ceph_fsid=$(uuidgen)
+set_environment "FSID" "${ceph_fsid}"
+
+log_info "Init cluster with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
+
+log_verbose "Создание директорий"
+sudo mkdir -p ${ceph_conf_dir}
+sudo mkdir -p ${ceph_data_dir}/bootstrap-mds ${ceph_data_dir}/bootstrap-mgr ${ceph_data_dir}/bootstrap-osd ${ceph_data_dir}/bootstrap-rgw
+
+log_verbose "Создание ключей"
+sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
+sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mgr 'allow *' --cap mds 'allow *'
+sudo ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
+sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
+sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
+
+
+log_verbose "Создание конфигурации ${ceph_main_conf}"
+cat <<EOF | sudo tee ${ceph_main_conf}
+[global]
+fsid = ${ceph_fsid}
+mon initial members = $(hostname -s)
+mon host = $(hostname -s)
+
+public network = ${public_network}
+cluster network = ${cluster_network}
+
+auth cluster required = cephx
+auth service required = cephx
+auth client required = cephx
+
+osd_pool_default_size = 3
+osd_pool_default_min_size = 2
+osd_pool_default_pg_num = 333
+osd_crush_chooseleaf_type = 1
+EOF
+
+set_file_rights
+
+log_info "Базовая инициализация завершена"

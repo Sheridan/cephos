@@ -6,6 +6,9 @@ ifupdown
 iperf
 iproute2
 iptraf-ng
+iputils-arping
+iputils-ping
+iputils-tracepath
 isc-dhcp-client
 mtr
 net-tools

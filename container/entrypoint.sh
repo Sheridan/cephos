@@ -12,6 +12,8 @@ function add_repo()
     local repo_url="$2"
     local key_url="$3"
 
+		echo "Adding repository ${name} from ${repo_url} with key ${key_url}"
+
     echo "deb ${repo_url}" > "${live_build_dir}/config/archives/${name}.list.chroot"
     cp "${live_build_dir}/config/archives/${name}.list.chroot" "${live_build_dir}/config/archives/${name}.list.binary"
 
@@ -28,6 +30,7 @@ function add_repo()
 
 function prepare_config()
 {
+	echo "Preparing data..."
 	mkdir -p ${live_build_dir}/config ${tmp_dir}
 
 	rsync \
@@ -41,27 +44,32 @@ function prepare_config()
 	mkdir -p "${live_build_dir}/config/archives"
 
 	add_repo "influxdata" "https://repos.influxdata.com/debian stable main" "https://repos.influxdata.com/influxdata-archive_compat.key"
+	add_repo "ceph" "https://download.ceph.com/debian-squid bookworm main" "https://download.ceph.com/keys/release.asc"
 }
 
 function configure()
 {
+	echo "Configuring lb..."
 	cd ${live_build_dir}
 	${live_build} config \
 						--apt-indices false \
 						--architecture amd64 \
+						--archive-areas "main contrib non-free non-free-firmware" \
 						--binary-images hdd \
 						--chroot-squashfs-compression-type lz4 \
-						--debian-installer live \
+						--debian-installer none \
 						--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl --variant=minbase" \
 						--distribution bookworm \
 						--hdd-label CephOS \
 						--system live \
   					--apt-recommends false \
-    				--bootappend-live "boot=live components username=cephos noautologin persistence"
+						--memtest memtest86+ \
+    				--bootappend-live "boot=live components username=cephos noautologin persistence debugfs=off"
 }
 
 function build()
 {
+	echo "Building image..."
 	local result_img_file="${live_build_dir}/live-image-amd64.img"
 	local result_run_file="${work_dir}/cephos_installer.run"
 	cd ${live_build_dir}
@@ -73,6 +81,7 @@ function build()
 
 function clean()
 {
+	echo "Cleaning data..."
 	sudo rm -rf ${live_build_dir}
 }
 trap clean EXIT SIGINT SIGTERM

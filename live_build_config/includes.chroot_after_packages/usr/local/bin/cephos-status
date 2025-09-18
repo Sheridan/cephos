@@ -1,0 +1,7 @@
+#!/bin/bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+set -euo pipefail
+
+ceph -s

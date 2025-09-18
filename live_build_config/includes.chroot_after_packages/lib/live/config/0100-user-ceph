@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-# Hook для смены пароля пользователя при старте Live
-
-echo "cephos:cephos" | chpasswd
-chsh -s /bin/bash cephos
