@@ -13,7 +13,8 @@ Password: cephos
 # example
 ```
 cephos$ cephos-init-host -v -n cf.domain.local
-cephos$ cephos-init-cluster -v -p 10.0.0.0/8 -c 10.0.0.0/8
-cephos$ cephos-init-mon -v -P 10.0.2.15
-cephos$ cephos-append-disk -v -d /dev/vdb
+cephos$ cephos-init-cluster -v -P 10.0.0.0/8 -C 10.0.0.0/8 -p 10.0.2.15 -c 10.0.2.15
+cephos$ cephos-init-mon -v
+cephos$ cephos-append-disk -v -d /dev/vdc
+cephos$ cephos-init-mgr -v
 ```

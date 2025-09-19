@@ -5,6 +5,7 @@ live-boot
 live-config
 live-config-systemd
 login
+logrotate
 passwd
 procps
 sudo

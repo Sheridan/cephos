@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer: Logs rotation
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+Persistent=true
+Unit=logrotate.service
+
+[Install]
+WantedBy=timers.target

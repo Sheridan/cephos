@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -d <block_device>
+Example: $0 -d /dev/sdb
+EOF
+
+set -euo pipefail
+# --- options parse ---
+block_device=""
+while getopts ":d:hv" opt
+do
+  case ${opt} in
+    d) block_device="${OPTARG}" ;;
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+
+if [[ -z "$block_device" ]]
+then
+  wrong_opt "Не указаны опции"
+fi
+
+if [ ! -b "$block_device" ]
+then
+  log_cry "Block device ${block_device} not exists or not a valid block device"
+fi
+# --- options parse ---
+
+ask_confirmation "Эта операция уничтожит все данные на диске ${block_device}. Продолжать?"
+
+function calc_part_sizes()
+{
+  local mem_total_kb mem_total_mb swap_size_mb
+  mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  mem_total_mb=$((mem_total_kb / 1024))
+  swap_size_mb=$((mem_total_mb * 2))
+  echo "$swap_size_mb"
+}
+
+function partition_device()
+{
+  local swap_size_mb=$1
+  log_info "Разметка устройства $block_device..."
+  sudo parted --script "$block_device" mklabel gpt
+  sudo parted --script "$block_device" mkpart primary linux-swap 1MiB "$((swap_size_mb))"MiB
+  sudo parted --script "$block_device" mkpart primary ext4 "$((swap_size_mb))"MiB  100%
+  sudo partprobe "$block_device"
+  sleep 1
+}
+
+function format_partitions()
+{
+  log_info "Форматирование..."
+  sudo mkswap    -L swap "${block_device}1"
+  sudo mkfs.ext4 -L log -F "${block_device}2"
+}
+
+function update_fstab()
+{
+  local uuid_swap=$(sudo blkid -s UUID -o value "${block_device}1")
+  local uuid_log=$(sudo blkid -s UUID -o value "${block_device}2")
+
+  log_info "Добавляем записи в /etc/fstab..."
+  sudo tee -a /etc/fstab >/dev/null <<EOF
+UUID=$uuid_swap none swap sw 0 0
+UUID=$uuid_log /var/log ext4 defaults,noatime 0 2
+EOF
+}
+
+function move_dir()
+{
+  local source="$1"
+  local destination="$2"
+
+  log_info "Перенос ${source}..."
+  sudo rsync -vaXH --remove-source-files "${source}/" "${destination}"/
+  rm -rf "${source:?}/"* || true
+}
+
+function move_data()
+{
+  local mount_log="/mnt/new_log"
+
+  # Создаём временные точки монтирования
+  sudo mkdir -p  "$mount_log"
+
+  log_info "Монтируем новые разделы..."
+  sudo mount "${block_device}2" "$mount_log"
+
+  log_info "Перенос содержимого каталогов..."
+  move_dir "/var/log" "$mount_log"
+
+  log_info "Размонтируем временные точки..."
+  sudo umount "$mount_log"
+  sudo rmdir  "$mount_log"
+
+  log_info "Перенос завершён. После перезагрузки система будет использовать новые разделы."
+}
+
+function main()
+{
+  local swap_size
+  read swap_size < <(calc_part_sizes)
+  partition_device "$swap_size"
+  format_partitions
+  manage_services stop
+  move_data
+  update_fstab
+}
+
+main
+ask_confirmation "Необходима перезагрузка. Перезагрузить хост?"
+log_wrn "Перезагрузка системы..."
+sudo reboot

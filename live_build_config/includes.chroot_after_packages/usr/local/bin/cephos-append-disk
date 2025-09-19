@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 . /usr/local/lib/cephos/cephos.sh.lib
 
@@ -23,25 +23,28 @@ done
 
 if [[ -z "$block_device" ]]
 then
-  help
-  exit 1
+  wrong_opt "Не указаны опции"
 fi
 
 if [ ! -b "$block_device" ]
 then
-  log_err "Block device ${block_device} not exists or not a valid block device"
-  exit 1
+  log_cry "Block device ${block_device} not exists or not a valid block device"
 fi
 # --- options parse ---
 
+ask_confirmation "Эта операция уничтожит все данные на диске ${block_device}. Продолжать?"
+
 log_info "Appending disk ${block_device} to mon ${mon_id}"
 
-# --- Prepare and create OSD ---
-log_info "Creating OSD on ${block_device}"
-set_file_rights
+log_info "Очистка устройства ${block_device}"
+# sudo wipefs -a ${block_device}
+sudo dd if=/dev/zero of=${block_device} bs=4M status=progress oflag=sync count=256
+
+log_info "Создание тома на устройстве ${block_device}"
 sudo ceph-volume \
     lvm create \
   --data "${block_device}" \
   --objectstore bluestore
 set_file_rights
+
 log_info "OSD successfully created on ${block_device}"

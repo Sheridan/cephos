@@ -1,54 +1,6 @@
 #!/bin/bash
 
-clr_reset="\e[0m"
-clr_info="\e[1;32m" # INFO
-clr_warn="\e[1;33m" # WARN
-clr_err="\e[1;31m"  # ERROR
-clr_verb="\e[1;36m"
-verbose=0
-
-function log_message()
-{
-  local log_level="$1"
-  local log_color="$2"
-  local log_text="$3"
-  echo -e "[${log_color}${log_level}${clr_reset}] ${log_text}"
-}
-
-function log_verbose()
-{
-  local message="$1"
-  if (( verbose ))
-  then
-    log_message "V" "$clr_verb" "$message"
-  fi
-}
-
-function log_info()
-{
-  local message="$1"
-  log_message "I" "$clr_info" "$message"
-}
-
-function log_wrn()
-{
-  local message="$1"
-  log_message "W" "$clr_warn" "$message"
-}
-
-function log_err()
-{
-  local message="$1"
-  log_message "E" "$clr_err" "$message"
-}
-
-function wrong_opt()
-{
-  local message="$1"
-  log_err "${message}"
-  help
-  exit 1
-}
+. /usr/local/lib/cephos/base.sh.lib
 
 function set_config_var()
 {
@@ -128,12 +80,6 @@ function check_hostname()
   fi
 }
 
-function help()
-{
-  echo "$help_text"
-  exit 0
-}
-
 function set_file_rights()
 {
   log_verbose "Выставление прав"
@@ -143,15 +89,33 @@ function set_file_rights()
   sudo chmod 600 ${ceph_conf_dir}/*.keyring
 }
 
+function manage_services
+{
+  local what="$1"
+  for svc in "ceph-mon@${mon_id}" "ceph-mgr@${mgr_id}"
+  do
+    sudo systemctl $what $svc
+  done
+}
+
+log_verbose "Подготовка данных"
 check_hostname
 ceph_conf_dir="/etc/ceph"
 ceph_data_dir="/var/lib/ceph"
 ceph_main_conf="${ceph_conf_dir}/ceph.conf"
 ceph_fsid=$(get_environment "FSID" "none")
 mon_id="$(hostname -s)"
-mon_data_dir="${ceph_data_dir}/mon.${mon_id}"
+mgr_id="$(hostname -s)"
+mon_data_dir="${ceph_data_dir}/mon/mon-${mon_id}"
+mgr_data_dir="${ceph_data_dir}/mgr/mgr-${mgr_id}"
 osd_data_dir="${ceph_data_dir}/osd"
+
+public_network=$(get_environment "PUBLIC_NETWORK" "10.0.0.0/8")
+cluster_network=$(get_environment "CLUSTER_NETWORK" "10.0.0.0/8")
+public_ip=$(get_environment "PUBLIC_IP" "10.0.0.100")
+cluster_ip=$(get_environment "CLUSTER_IP" "10.0.0.101")
 
 log_info "Main conf file: ${ceph_main_conf}"
 log_info "Ceph fsid: ${ceph_fsid}"
 log_info "Ceph mon id: ${mon_id}"
+log_info "Ceph mgr id: ${mgr_id}"

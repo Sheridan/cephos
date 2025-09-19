@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 . /usr/local/lib/cephos/cephos.sh.lib
 
@@ -24,14 +24,12 @@ done
 
 if [[ -z "$fqdn" ]]
 then
-  help
-  exit 1
+  wrong_opt "Не указаны опции"
 fi
 
 if [[ "$fqdn" != *.* ]]
 then
-  log_err "Ошибка: строка '$fqdn' не является FQDN (нет доменной части)"
-  exit 1
+  log_cry "Ошибка: строка '$fqdn' не является FQDN (нет доменной части)"
 fi
 # --- options parse ---
 

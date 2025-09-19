@@ -1,0 +1,18 @@
+[Unit]
+Description=Timer 'logrotate' service: Logs rotation
+
+[Service]
+Type=oneshot
+PIDFile=/run/timer-service-logrotate.pid
+ExecStart=/usr/bin/logrotate --log=/var/log/logrotate.log --state=/var/lib/logrotate/logrotate.state /etc/logrotate.conf
+User=root
+Group=root
+SyslogIdentifier=logrotate
+Restart=no
+RemainAfterExit=no
+RestartSec=100ms
+StandardOutput=journal
+StandardError=journal
+
+
+[Install]

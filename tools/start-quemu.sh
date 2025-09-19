@@ -4,21 +4,24 @@
 
 set -euo pipefail
 
-if [[ $# -ne 1 ]]
+if [[ $# -ne 2 ]]
 then
-  echo "Использование: $0 /dev/sdX"
+  echo "Использование: $0 root_flash tmp_flash"
+  echo "Например: $0 /dev/sdm /dev/sdn"
   exit 1
 fi
-flash_blk_dev="$1"
+root_blk_dev="$1"
+tmp_blk_dev="$2"
+
 qemu_hdd_0="tmp/ceph-hdd0.img"
 qemu_hdd_1="tmp/ceph-hdd1.img"
 
 
 function check_flash()
 {
-  if [[ ! -b "$flash_blk_dev" ]]
+  if [[ ! -b "$root_blk_dev" || ! -b "$tmp_blk_dev" ]]
   then
-    echo "Ошибка: $flash_blk_dev не найдено или не является блочным устройством"
+    echo "Ошибка: $root_blk_dev или $tmp_blk_dev не найдено или не является блочным устройством"
     exit 1
   fi
 }
@@ -35,12 +38,13 @@ function create_quemu_hdd()
 
 function run_qemu()
 {
-  echo "Запуск QEMU (флешка: $flash_blk_dev)"
+  echo "Запуск QEMU. root: $root_blk_dev; tmp: $tmp_blk_dev"
   qemu-system-x86_64 \
       -enable-kvm \
       -m 8192 \
       -smp 2 \
-      -drive if=virtio,file="$flash_blk_dev",format=raw,cache=none \
+      -drive if=virtio,file="$root_blk_dev",format=raw,cache=none \
+      -drive if=virtio,file="$tmp_blk_dev",format=raw,cache=none \
       -drive if=virtio,file="$qemu_hdd_0",format=qcow2 \
       -drive if=virtio,file="$qemu_hdd_1",format=qcow2 \
       -boot order=a \
