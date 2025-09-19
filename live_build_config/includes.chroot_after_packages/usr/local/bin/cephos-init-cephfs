@@ -2,8 +2,6 @@
 
 . /usr/local/lib/cephos/cephos.sh.lib
 
-. /usr/local/lib/cephos/cephos.sh.lib
-
 read -r -d '' help_text <<EOF
 Usage: $0
 Example: $0
