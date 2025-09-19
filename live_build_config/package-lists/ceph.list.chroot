@@ -11,5 +11,6 @@ ceph-osd
 ceph-volume
 cephadm
 lvm2
+python3-xmltodict
 radosgw
 uuid-runtime

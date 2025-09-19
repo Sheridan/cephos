@@ -32,12 +32,20 @@ then
   sudo mkdir -p "${mgr_data_dir}"
 
   log_info "Создание ключей"
-  sudo ceph auth get-or-create mgr.cf mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o ${mgr_data_dir}/keyring
+  sudo ceph auth get-or-create mgr.${mgr_id} mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o ${mgr_data_dir}/keyring
 
   set_file_rights
 
+  log_info "Настройка"
+  ceph mgr module disable restful
+  ceph mgr module enable stats
+  ceph mgr module enable dashboard
+  ceph config set mgr mgr/dashboard/server_port 8080
+  echo 'P@ssw0rd' > /tmp/pass
+  sudo ceph dashboard ac-user-create cephos -i /tmp/pass administrator
   log_info "Старт сервиса ceph-mgr@${mgr_id}"
   sudo systemctl enable --now ceph-mgr@${mgr_id}.service
+
 else
   log_verbose "MGR already exists on this host"
 fi

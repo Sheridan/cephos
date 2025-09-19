@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0
+Example: $0
+EOF
+
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+# --- options parse ---
+
+log_info "Создание пулов cephfs"
+sudo ceph osd pool create cephfs_metadata 32 32
+sudo ceph osd pool set    cephfs_metadata pg_autoscale_mode on
+sudo ceph osd pool set    cephfs_metadata bulk true
+sudo ceph osd pool create cephfs_data     64 64
+sudo ceph osd pool set    cephfs_data     pg_autoscale_mode on
+sudo ceph osd pool set    cephfs_data     bulk true
+sudo ceph config set global osd_pool_default_pg_autoscale_mode on
+
+log_info "Создание cephfs"
+sudo ceph fs new cephfs cephfs_metadata cephfs_data
+sudo mkdir -p "${mds_data_dir}"
+sudo ceph auth get-or-create mds.${mds_id} mds 'allow *' osd 'allow rwx' mon 'allow rw' > ${mds_data_dir}/keyring
+set_file_rights
+
+log_info "Старт сервиса ceph-mds@${mon_id}"
+sudo systemctl enable --now ceph-mds@${mon_id}.service

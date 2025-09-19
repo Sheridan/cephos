@@ -104,10 +104,13 @@ ceph_conf_dir="/etc/ceph"
 ceph_data_dir="/var/lib/ceph"
 ceph_main_conf="${ceph_conf_dir}/ceph.conf"
 ceph_fsid=$(get_environment "FSID" "none")
+
 mon_id="$(hostname -s)"
 mgr_id="$(hostname -s)"
-mon_data_dir="${ceph_data_dir}/mon/mon-${mon_id}"
-mgr_data_dir="${ceph_data_dir}/mgr/mgr-${mgr_id}"
+mds_id="$(hostname -s)"
+mon_data_dir="${ceph_data_dir}/mon/ceph-${mon_id}"
+mgr_data_dir="${ceph_data_dir}/mgr/ceph-${mgr_id}"
+mds_data_dir="${ceph_data_dir}/mds/ceph-${mds_id}"
 osd_data_dir="${ceph_data_dir}/osd"
 
 public_network=$(get_environment "PUBLIC_NETWORK" "10.0.0.0/8")

@@ -10,7 +10,7 @@ EOF
 set -euo pipefail
 
 # --- options parse ---
-while getopts ":P:hv" opt
+while getopts ":hv" opt
 do
   case ${opt} in
     h) help; exit 0 ;;

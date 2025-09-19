@@ -48,7 +48,7 @@ function run_qemu()
       -drive if=virtio,file="$qemu_hdd_0",format=qcow2 \
       -drive if=virtio,file="$qemu_hdd_1",format=qcow2 \
       -boot order=a \
-      -nic user,hostfwd=tcp::2222-:22,model=virtio-net-pci,mac=52:54:00:aa:bb:01 \
+      -nic user,hostfwd=tcp::2222-:22,hostfwd=tcp::8080-:8080,model=virtio-net-pci,mac=52:54:00:aa:bb:01 \
       -display vnc=:0
 }
 
