@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+log_cry "Не закончено"
+
 . /usr/local/lib/cephos/base.sh.lib
 
 read -r -d '' help_text <<EOF
