@@ -1,6 +1,6 @@
 services:
-  cephfs_build:
-    container_name: cephfs_build
+  cephos_build:
+    container_name: cephos_build
     privileged: true
     tty: true
     stdin_open: true

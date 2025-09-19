@@ -26,7 +26,7 @@ jobs:
 
       - name: Rename artifact with release tag
         run: |
-          TAG=${GITHUB_REF_NAME}   # например v1.2.3
+          TAG=${GITHUB_REF_NAME}
           ls -lh tmp/work/
           mv tmp/work/cephos_installer.run "tmp/work/cephos_installer_${TAG}.run"
 
@@ -35,10 +35,3 @@ jobs:
         with:
           name: cephos_installer
           path: tmp/work/cephos_installer_*.run
-
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: tmp/work/cephos_installer_*.run
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
