@@ -36,15 +36,18 @@ then
 
   set_file_rights
 
-  log_info "Настройка"
-  ceph mgr module disable restful
-  ceph mgr module enable stats
-  ceph mgr module enable dashboard
-  ceph config set mgr mgr/dashboard/server_port 8080
-  echo 'P@ssw0rd' > /tmp/pass
-  sudo ceph dashboard ac-user-create cephos -i /tmp/pass administrator
   log_info "Старт сервиса ceph-mgr@${mgr_id}"
   sudo systemctl enable --now ceph-mgr@${mgr_id}.service
+  sleep 5
+
+  log_info "Настройка"
+  sudo ceph mgr module disable restful
+  sudo ceph mgr module enable stats
+  sudo ceph mgr module enable dashboard
+  sudo ceph config set mgr mgr/dashboard/server_port 8080
+  sudo ceph config set mgr mgr/dashboard/ssl false
+  echo 'P@ssw0rd' > /tmp/passceph mgr dump | grep dashboard
+  sudo ceph dashboard ac-user-create cephos -i /tmp/pass administrator
 
 else
   log_verbose "MGR already exists on this host"

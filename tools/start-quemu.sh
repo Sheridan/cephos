@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+disk_size="8G"
+
 if [[ $# -ne 2 ]]
 then
   echo "Использование: $0 root_flash tmp_flash"
@@ -31,8 +33,8 @@ function create_quemu_hdd()
   local qemu_hdd="$1"
   if [[ ! -f "$qemu_hdd" ]]
   then
-    echo "Создаю $qemu_hdd (1G)..."
-    qemu-img create -f qcow2 "$qemu_hdd" 1G
+    echo "Создаю $qemu_hdd (${disk_size})..."
+    qemu-img create -f qcow2 "$qemu_hdd" ${disk_size}
   fi
 }
 

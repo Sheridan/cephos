@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 . /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/blockdev.sh.lib
 
 read -r -d '' help_text <<EOF
 Usage: $0 -d <block_device>
@@ -36,9 +37,7 @@ ask_confirmation "Эта операция уничтожит все данные
 
 log_info "Appending disk ${block_device} to mon ${mon_id}"
 
-log_info "Очистка устройства ${block_device}"
-# sudo wipefs -a ${block_device}
-sudo dd if=/dev/zero of=${block_device} bs=4M status=progress oflag=sync count=256
+purge_device "${block_device}"
 
 log_info "Создание тома на устройстве ${block_device}"
 sudo ceph-volume \

@@ -3,6 +3,7 @@
 log_cry "Не закончено"
 
 . /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/blockdev.sh.lib
 
 read -r -d '' help_text <<EOF
 Usage: $0 -d <block_device>
@@ -52,6 +53,7 @@ function partition_device()
   sudo parted --script "$block_device" mklabel gpt
   sudo parted --script "$block_device" mkpart primary linux-swap 1MiB "$((swap_size_mb))"MiB
   sudo parted --script "$block_device" mkpart primary ext4 "$((swap_size_mb))"MiB  100%
+  sync
   sudo partprobe "$block_device"
   sleep 1
 }
@@ -109,6 +111,7 @@ function main()
 {
   local swap_size
   read swap_size < <(calc_part_sizes)
+  purge_device "${block_device}"
   partition_device "$swap_size"
   format_partitions
   manage_services stop

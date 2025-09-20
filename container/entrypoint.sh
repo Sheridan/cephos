@@ -4,7 +4,21 @@ live_build="lb --color --verbose"
 project_dir="${HOME}/project"
 work_dir="${HOME}/work"
 live_build_dir="${work_dir}/live_build"
+live_build_config_dir="${live_build_dir}/config"
 tmp_dir="${work_dir}/tmp"
+
+function get_branch_name()
+{
+  local env_branch_name="${GITHUB_REF_NAME:-}"
+  local result_branch_name
+  if [[ -n "$env_branch_name" ]]
+  then
+    result_branch_name="$env_branch_name"
+  else
+    result_branch_name="development"
+  fi
+  echo "$result_branch_name"
+}
 
 function add_repo()
 {
@@ -14,24 +28,24 @@ function add_repo()
 
 		echo "Adding repository ${name} from ${repo_url} with key ${key_url}"
 
-    echo "deb ${repo_url}" > "${live_build_dir}/config/archives/${name}.list.chroot"
-    cp "${live_build_dir}/config/archives/${name}.list.chroot" "${live_build_dir}/config/archives/${name}.list.binary"
+    echo "deb ${repo_url}" > "${live_build_config_dir}/archives/${name}.list.chroot"
+    cp "${live_build_config_dir}/archives/${name}.list.chroot" "${live_build_config_dir}/archives/${name}.list.binary"
 
     tmpkey="${tmp_dir}/${name}.key"
 		gpg_key="${tmp_dir}/${name}.gpg"
     curl -fsSL "${key_url}" -o "${tmpkey}"
 
     gpg --dearmor < "${tmpkey}" > "${gpg_key}"
-    gpg --no-default-keyring --keyring "${gpg_key}" --export --armor > "${live_build_dir}/config/archives/${name}.key.chroot"
+    gpg --no-default-keyring --keyring "${gpg_key}" --export --armor > "${live_build_config_dir}/archives/${name}.key.chroot"
 
-    cp "${live_build_dir}/config/archives/${name}.key.chroot" "${live_build_dir}/config/archives/${name}.key.binary"
+    cp "${live_build_config_dir}/archives/${name}.key.chroot" "${live_build_config_dir}/archives/${name}.key.binary"
 }
 
 
 function prepare_config()
 {
 	echo "Preparing data..."
-	mkdir -p ${live_build_dir}/config ${tmp_dir}
+	mkdir -p ${live_build_config_dir} ${tmp_dir}
 
 	rsync \
 		-rlpt \
@@ -39,12 +53,17 @@ function prepare_config()
 		--no-owner \
 		--no-group \
 		--verbose \
-		"${project_dir}/live_build_config/" "${live_build_dir}/config/"
+		"${project_dir}/live_build_config/" "${live_build_config_dir}/"
 
-	mkdir -p "${live_build_dir}/config/archives"
+	mkdir -p "${live_build_config_dir}/archives"
 
 	add_repo "influxdata" "https://repos.influxdata.com/debian stable main" "https://repos.influxdata.com/influxdata-archive_compat.key"
 	add_repo "ceph" "https://download.ceph.com/debian-squid bookworm main" "https://download.ceph.com/keys/release.asc"
+
+	${project_dir}/tools/logo-to-splash.sh "${project_dir}/logo.png" "${live_build_config_dir}/bootloaders/syslinux/splash.png"
+	echo "$(get_branch_name)"                 > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_version
+	echo "https://github.com/Sheridan/cephos" > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_repository
+	echo "https://t.me/ceph_os"               > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_telegram
 }
 
 function configure()

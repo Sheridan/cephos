@@ -1,0 +1,27 @@
+#!/bin/bash
+
+function purge_device()
+{
+  local block_device="$1"
+  echo "Purging device ${block_device}"
+
+  # размер в секторах (512b)
+  local disk_size=$(sudo blockdev --getsz "${block_device}")
+
+  # Затираем начало — LVM PV headers, GPT primary header
+  sudo dd if=/dev/zero of="${block_device}" bs=1M count=100 conv=fsync
+
+  # Затираем последние 100M (LVM metadata, GPT backup header)
+  local sectors_100M=$((100*1024*1024/512))    # 204800
+  local seek_lvm=$((disk_size - sectors_100M))
+  sudo dd if=/dev/zero of="${block_device}" bs=512 seek=${seek_lvm} count=${sectors_100M} conv=fsync
+
+  # Дополнительно подчистить ещё раз GPT backup (10МБ от конца) — опционально
+  local size_mb=$((disk_size * 512 / 1024 / 1024))
+  local seek_gpt=$((size_mb - 10))
+  sudo dd if=/dev/zero of="${block_device}" bs=1M seek=${seek_gpt} count=10 conv=fsync
+
+  # Перечитываем таблицу разделов
+  sudo partprobe ${block_device} || sudo blockdev --rereadpt "${block_device}" || true
+  sleep 1
+}

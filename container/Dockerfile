@@ -11,8 +11,10 @@ RUN apt-get update && \
         curl \
         debootstrap \
         fdisk \
+        fonts-noto-mono \
         git \
         gpg \
+        imagemagick \
         live-build \
         make \
         rsync \

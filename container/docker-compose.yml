@@ -13,3 +13,5 @@ services:
     volumes:
       - ../tmp/work:/home/worker/work
       - ../:/home/worker/project
+    environment:
+      GITHUB_REF_NAME: ${GITHUB_REF_NAME}

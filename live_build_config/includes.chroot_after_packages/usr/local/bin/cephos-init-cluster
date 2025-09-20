@@ -72,8 +72,15 @@ auth_client_required = cephx
 
 osd_pool_default_size = 3
 osd_pool_default_min_size = 2
-osd_pool_default_pg_num = 333
 osd_crush_chooseleaf_type = 1
+
+osd_pool_default_pg_autoscale_mode = on
+
+osd_max_backfills = 1
+osd_recovery_max_active = 1
+osd_recovery_op_priority = 3
+osd_scrub_sleep = 0.1
+osd_deep_scrub_randomize_ratio = 0.5
 EOF
 
 set_file_rights

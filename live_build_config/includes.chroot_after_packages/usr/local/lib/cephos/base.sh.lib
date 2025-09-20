@@ -70,7 +70,7 @@ function ask_confirmation()
 
   while true
   do
-    echo -n "[${clr_warn}?${clr_reset}] "
+    echo -ne "[${clr_warn}?${clr_reset}] "
     read -r -p "$prompt_message (y/n): " user_input
     case "$user_input" in
       [Yy]) return 0 ;;
