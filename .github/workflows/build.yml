@@ -34,15 +34,8 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.event.release.tag_name }}
+          release_name: "CephOS ${{ github.event.release.tag_name }}"
           files: tmp/work/cephos_installer_*.run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload package
-        run: |
-          TAG=${GITHUB_REF_NAME}
-          curl -X PUT \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @"tmp/work/cephos_installer_${TAG}.run" \
-            https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=cephos_installer_${TAG}.run
