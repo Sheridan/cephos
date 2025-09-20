@@ -35,7 +35,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.release.tag_name }}
-          release_name: "CephOS ${{ github.event.release.tag_name }}"
           files: tmp/work/cephos_installer_*.run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
