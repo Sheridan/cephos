@@ -24,8 +24,8 @@ done
 log_info "Health"
 sudo ceph health
 
-log_info "Pools"
-sudo ceph lspools
+# log_info "Pools"
+# sudo ceph lspools
 
 log_info "Using"
 sudo ceph df
