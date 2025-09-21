@@ -46,8 +46,9 @@ then
   sudo ceph mgr module enable dashboard
   sudo ceph config set mgr mgr/dashboard/server_port 8080
   sudo ceph config set mgr mgr/dashboard/ssl false
-  echo 'P@ssw0rd' > /tmp/passceph mgr dump | grep dashboard
+  echo 'P@ssw0rd' > /tmp/pass
   sudo ceph dashboard ac-user-create cephos -i /tmp/pass administrator
+  rm -f /tmp/pass
 
 else
   log_verbose "MGR already exists on this host"

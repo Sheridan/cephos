@@ -42,5 +42,5 @@ then
   sudo sed -i "s/\bdebian\b/ ${_hostname} /g" "/etc/hosts"
   sudo domainname "${_domain}"
   sudo hostnamectl hostname "${_hostname}"
-  log_info "Relogin for update hostname"
+  log_wrn "Relogin for update hostname"
 fi

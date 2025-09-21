@@ -2,7 +2,7 @@
 
 # cephos
 CephOS is a Debian Live-based distribution designed for lightweight NAS and SOHO environments.
-It boots from a USB flash drive in read-only mode, provisions local disks for Ceph.
+It boots from a USB flash drive, provisions local disks for Ceph.
 
 The distribution is primarily focused on CephFS, but all Ceph features are still available.
 

@@ -2,6 +2,51 @@
 
 . /usr/local/lib/cephos/cephos.sh.lib
 
+read -r -d '' help_text <<EOF
+Usage: $0
+Example: $0
+EOF
+
 set -euo pipefail
 
-ceph -s
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+# --- options parse ---
+
+log_info "Health"
+sudo ceph health
+
+log_info "Pools"
+sudo ceph lspools
+
+log_info "Using"
+sudo ceph df
+
+log_info "OSD tree"
+sudo ceph osd tree
+
+log_info "OSD df tree"
+sudo ceph osd df tree
+
+log_info "OSD perf"
+sudo ceph osd perf
+
+log_info "Pools stats"
+sudo ceph osd pool stats
+
+log_info "PG stats"
+sudo ceph pg stat
+
+log_info "MON stats"
+sudo ceph mon stat
+
+log_info "Cluster status"
+sudo ceph -s
