@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+log_cry "Не закончено"
+
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
 
@@ -32,19 +34,32 @@ then
   log_cry "Block device ${block_device} not exists or not a valid block device"
 fi
 # --- options parse ---
-
 check_user "cephos"
 ask_confirmation "Эта операция уничтожит все данные на диске ${block_device}. Продолжать?"
 
-log_info "Appending disk ${block_device} to mon ${mon_id}"
+function format_partitions()
+{
+  log_info "Форматирование..."
+  sudo mkswap -L swap "${block_device}"
+}
 
-purge_device "${block_device}"
+function update_fstab()
+{
+  local uuid_swap=$(sudo blkid -s UUID -o value "${block_device}")
 
-log_info "Создание тома на устройстве ${block_device}"
-sudo ceph-volume \
-    lvm create \
-  --data "${block_device}" \
-  --objectstore bluestore
-set_file_rights
+  log_info "Добавляем записи в /etc/fstab..."
+  echo "UUID=$uuid_swap none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
 
-log_info "OSD successfully created on ${block_device}"
+
+}
+
+
+function main()
+{
+  format_partitions
+  update_fstab
+
+  sudo swapon "${block_device}"
+}
+
+main

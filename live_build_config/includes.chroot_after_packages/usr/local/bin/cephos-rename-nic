@@ -87,6 +87,7 @@ then
     wrong_opt "Ошибка: необходимо указать параметры -o и -n."
 fi
 
+check_user "cephos"
 check_interface_exists "$old_iface"
 check_interface_not_exists_in_rules "$new_iface"
 

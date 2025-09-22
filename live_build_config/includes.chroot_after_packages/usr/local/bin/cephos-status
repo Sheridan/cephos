@@ -20,6 +20,7 @@ do
   esac
 done
 # --- options parse ---
+check_user "cephos"
 
 log_info "Health"
 sudo ceph health

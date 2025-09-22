@@ -31,10 +31,30 @@ jobs:
           mv tmp/work/cephos_installer.run "tmp/work/cephos_installer_${TAG}.run"
           ls -lh tmp/work/
 
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          files: tmp/work/cephos_installer_*.run
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Upload to GitHub Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ github.event.release.tag_name }}
+      #     files: tmp/work/cephos_installer_*.run
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get fresh Access Token from Yandex
+        id: get_token
+        run: |
+          RESPONSE=$(curl -s -X POST https://oauth.yandex.ru/token \
+            -d "grant_type=refresh_token" \
+            -d "refresh_token=${{ secrets.YANDEX_REFRESH_TOKEN }}" \
+            -d "client_id=${{ secrets.YANDEX_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.YANDEX_CLIENT_SECRET }}")
+          echo "Received token type: $(echo $RESPONSE | jq -r '.token_type')"
+          ACCESS_TOKEN=$(echo $RESPONSE | jq -r '.access_token')
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact to Yandex Disk via WebDAV
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          curl -T "tmp/work/cephos_installer_${TAG}.run" \
+            -u "oauth:${{ steps.get_token.outputs.token }}" \
+            "https://webdav.yandex.ru/GitHub/${{ github.event.repository.name }}/cephos_installer_${TAG}.run"

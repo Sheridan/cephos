@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -n <node_host>
+Example: $0 -n ceph-first.domain.local
+EOF
+
+set -euo pipefail
+
+# --- options parse ---
+current_user="cephos"
+key_type="ed25519"
+cluster_node=""
+while getopts ":n:hv" opt
+do
+  case ${opt} in
+    n) cluster_node="${OPTARG}" ;;
+    h) help; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
+    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+  esac
+done
+
+if [[ -z "${cluster_node}" ]]
+then
+  wrong_opt "Не указана одна из нод кластера"
+fi
+# --- options parse ---
+
+function generate_ssh_key()
+{
+  local target_home="$1"
+  local target_user="$2"
+  local ssh_dir="${target_home}/.ssh"
+  local key_file="${ssh_dir}/id_${key_type}"
+
+  log_info "Генерация ключа для пользователя '${target_user}'..."
+  log_info "Путь к ключу: ${key_file}"
+
+  if [[ -f "${key_file}" ]]
+  then
+    log_info "Ключ ${key_file} уже существует."
+    return 0
+  fi
+
+  if [[ ! -d "${ssh_dir}" ]]
+  then
+    log_verbose "Создаю директорию ${ssh_dir}"
+    mkdir -p -m 700 "${ssh_dir}"
+    chown "${target_user}":"${target_user}" "${ssh_dir}"
+  fi
+
+  if ! ssh-keygen -t "${key_type}" -f "${key_file}" -N "" -C "${target_user}@$(hostname)"
+  then
+    log_cry "Не удалось сгенерировать ${key_type} ключ для пользователя ${target_user}" }
+  fi
+
+  chown "${target_user}":"${target_user}" "${key_file}" "${key_file}.pub"
+  chmod 600 "${key_file}"
+  chmod 644 "${key_file}.pub"
+
+  log_info "Ключ успешно сгенерирован для ${target_user}"
+}
+
+function get_user_home()
+{
+  local username="$1"
+  local user_home
+
+  user_home=$(getent passwd "${username}" | cut -d: -f6)
+
+  if [[ -z "${user_home}" ]]
+  then
+    log_cry "Не удалось определить домашний каталог для ${username}"
+  fi
+
+  echo "${user_home}"
+}
+
+function spread_ssh_key()
+{
+  local current_user_home="$1"
+  local target_user="$2"
+  local target_host="$3"
+
+  local ssh_dir="${current_user_home}/.ssh"
+  local pub_key_file="${ssh_dir}/id_${key_type}.pub"
+
+  echo "Копируем SSH ключ пользователю ${target_user} на ${target_host}..."
+  if ! ssh-copy-id -i "${pub_key_file}" "${target_user}@${target_host}"
+  then
+    log_cry "Ошибка копирования ключа для ${target_user}"
+  fi
+}
+
+check_user "cephos"
+user_home=$(get_user_home "${current_user}")
+generate_ssh_key "${user_home}" "${current_user}"
+spread_ssh_key "${user_home}" "${current_user}" "${cluster_node}"

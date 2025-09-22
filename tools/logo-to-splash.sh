@@ -23,10 +23,7 @@ convert ${src_img} \
   -font Noto-Sans-Mono-Bold -pointsize 28 \
   -background black -gravity center -extent 640x480 \
   -colorspace sRGB -depth 8 \
-  -gravity north -pointsize 20 -fill white \
-    -annotate +0+10 "https://github.com/Sheridan/cephos" \
-  -gravity south -pointsize 20 -fill white \
-    -annotate +190+35 "https://t.me/ceph_os" \
-  -gravity south -pointsize 20 -fill white \
-    -annotate -190+35 "Version: ${branch_name}" \
+  -gravity north -pointsize 20 -fill white -annotate +0+10   "https://github.com/Sheridan/cephos" \
+  -gravity south -pointsize 20 -fill white -annotate +190+35 "https://t.me/ceph_os"               \
+  -gravity south -pointsize 20 -fill white -annotate -190+35 "Version: ${branch_name}"            \
   ${dst_img}

@@ -20,6 +20,7 @@ do
   esac
 done
 # --- options parse ---
+check_user "cephos"
 
 log_info "Init mon ${mon_id} with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
 

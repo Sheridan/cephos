@@ -35,6 +35,9 @@ fi
 # --- options parse ---
 
 check_user "cephos"
+
+sudo timedatectl set-ntp true
+
 ceph_fsid=$(uuidgen)
 set_environment "FSID" "${ceph_fsid}"
 

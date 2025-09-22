@@ -32,9 +32,23 @@ then
   log_cry "Ошибка: строка '$fqdn' не является FQDN (нет доменной части)"
 fi
 # --- options parse ---
+check_user "cephos"
 
 _hostname="${fqdn%%.*}"
 _domain="${fqdn#*.}"
+
+function restart_shell()
+{
+  local current_shell
+  current_shell=$(basename "$SHELL")
+
+  log_verbose "Переинициализирую оболочку ${current_shell}"
+  case "${current_shell}" in
+    bash) exec bash ;;
+    zsh)  exec zsh ;;
+    *)    log_cry "Неизвестная оболочка: $current_shell. Поддерживаются только bash и zsh. Relogin for update hostname" ;;
+  esac
+}
 
 if [[ "$(hostname -s)" == "debian" ]]
 then
@@ -42,5 +56,5 @@ then
   sudo sed -i "s/\bdebian\b/ ${_hostname} /g" "/etc/hosts"
   sudo domainname "${_domain}"
   sudo hostnamectl hostname "${_hostname}"
-  log_wrn "Relogin for update hostname"
+  restart_shell
 fi
