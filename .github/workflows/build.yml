@@ -49,12 +49,18 @@ jobs:
             -d "client_secret=${{ secrets.YANDEX_CLIENT_SECRET }}")
           echo "Received token type: $(echo $RESPONSE | jq -r '.token_type')"
           ACCESS_TOKEN=$(echo $RESPONSE | jq -r '.access_token')
+          echo "ACCESS_TOKEN length: ${#ACCESS_TOKEN}"
           echo "::add-mask::$ACCESS_TOKEN"
           echo "token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Upload artifact to Yandex Disk via WebDAV
+      - name: Debug token output
+        run: echo "Token is -> ${{ steps.get_token.outputs.token }}" | sed 's/./& /g'
+
+      - name: Upload to Yandex.Disk
         run: |
           TAG=${GITHUB_REF_NAME}
           curl -T "tmp/work/cephos_installer_${TAG}.run" \
             -u "oauth:${{ steps.get_token.outputs.token }}" \
-            "https://webdav.yandex.ru/GitHub/${{ github.event.repository.name }}/cephos_installer_${TAG}.run"
+            --progress-bar \
+            --expect100-timeout 0 \
+            "https://webdav.yandex.ru/GitHub/cephos/cephos_installer_${TAG}.run"
