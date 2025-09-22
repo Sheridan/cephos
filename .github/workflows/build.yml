@@ -53,14 +53,27 @@ jobs:
           echo "::add-mask::$ACCESS_TOKEN"
           echo "token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Debug token output
-        run: echo "Token is -> ${{ steps.get_token.outputs.token }}" | sed 's/./& /g'
+      # - name: Debug token output
+      #   run: echo "Token is -> ${{ steps.get_token.outputs.token }}" | sed 's/./& /g'
 
-      - name: Upload to Yandex.Disk
+      - name: Get Yandex.Disk upload URL
+        id: get_upload_url
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          UPLOAD_URL=$(curl -s \
+            -H "Authorization: OAuth ${{ steps.get_token.outputs.token }}" \
+            "https://cloud-api.yandex.net/v1/disk/resources/upload?path=GitHub/cephos/cephos_installer_${TAG}.run&overwrite=true" \
+            | jq -r '.href')
+          if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]; then
+            echo "Failed to get upload URL"
+            exit 1
+          fi
+          echo "upload_url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Upload file to Yandex.Disk
         run: |
           TAG=${GITHUB_REF_NAME}
           curl -T "tmp/work/cephos_installer_${TAG}.run" \
-            -u "oauth:${{ steps.get_token.outputs.token }}" \
+            -o /dev/null \
             --progress-bar \
-            --expect100-timeout 0 \
-            "https://webdav.yandex.ru/GitHub/cephos/cephos_installer_${TAG}.run"
+            "${{ steps.get_upload_url.outputs.upload_url }}"
