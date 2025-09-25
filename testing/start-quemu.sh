@@ -1,11 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
 disk_size="8G"
-base_ssh_port=2200
-base_http_port=8000
+memory_mb=8192
+cpus=2
+
 base_vnc_disp=10   # :10, :11 ...
+
+qemu_tap_interfaces_prefix="tap_qemu"
+qemu_bridge_interface="br_qemu"
 
 conf_str="${1:-}"
 
@@ -27,10 +31,33 @@ function create_qemu_hdd()
   fi
 }
 
+function up_vm_tap_interface()
+{
+  local vm_tap_interface="$1"
+  echo "Создаю TAP-интерфейс ${vm_tap_interface} для VM ${vmname}..."
+  # создаём TAP, разрешаем работать root'у
+  ip tuntap add dev "${vm_tap_interface}" mode tap user "$(id -un)"
+  # подключаем его к мосту
+  ip link set "${vm_tap_interface}" master "${qemu_bridge_interface}"
+  # включаем TAP
+  ip link set "${vm_tap_interface}" up
+}
+
+function down_vm_tap_interface()
+{
+  local vm_tap_interface="$1"
+  echo "Удаляю TAP-интерфейс ${vm_tap_interface} для VM ${vmname}..."
+  # выключаем и сносим
+  ip link set "${vm_tap_interface}" down 2>/dev/null || true
+  ip link delete "${vm_tap_interface}" 2>/dev/null || true
+}
+
 function run_vm()
 {
   local vmname=$1; shift
   local disks=("$@")
+
+  local vm_tap_interface="${qemu_tap_interfaces_prefix}_${vmname}"
 
   local qemu_hdd_0="tmp/${vmname}-hdd0.img"
   local qemu_hdd_1="tmp/${vmname}-hdd1.img"
@@ -38,8 +65,10 @@ function run_vm()
   create_qemu_hdd "$qemu_hdd_1"
 
   local drives=()
-  for rawdev in "${disks[@]}"; do
-    if [[ ! -b "$rawdev" ]]; then
+  for rawdev in "${disks[@]}"
+  do
+    if [[ ! -b "$rawdev" ]]
+    then
       echo "Ошибка: $rawdev не блочное устройство"
       exit 1
     fi
@@ -50,22 +79,29 @@ function run_vm()
   drives+=("-drive" "if=virtio,file=$qemu_hdd_1,format=qcow2")
 
   local idx=$((vm_index++))
-  local ssh_port=$((base_ssh_port + idx))
-  local http_port=$((base_http_port + idx))
   local vnc_disp=$((base_vnc_disp + idx))
   local mac="52:54:00:aa:bb:$(printf '%02x' $idx)"
 
-  echo ">>> Запуск ВМ $vmname (SSH:$ssh_port, HTTP:$http_port, VNC :$vnc_disp)"
+  echo ">>> Запуск ВМ $vmname (VNC :$vnc_disp)"
+  # up_vm_tap_interface "$vm_tap_interface"
+    #   -netdev tap,id=net0,ifname=${vm_tap_interface},script=no,downscript=no \
+    # -device virtio-net-pci,netdev=net0,mac=${mac} \
   qemu-system-x86_64 \
     -enable-kvm \
-    -m 8192 \
-    -smp 2 \
+    -m ${memory_mb} \
+    -smp ${cpus} \
     "${drives[@]}" \
     -boot order=a \
-    -nic user,hostfwd=tcp::${ssh_port}-:22,hostfwd=tcp::${http_port}-:8080,model=virtio-net-pci,mac=${mac} \
     -display vnc=:$vnc_disp \
     -name "${vmname}" \
     &
+  # local pid=$!
+  # (
+  #   if wait "$pid"
+  #   then
+  #     down_vm_tap_interface "$vm_tap_interface"
+  #   fi
+  # ) &
 }
 
 function parse_vm_conf()
@@ -76,6 +112,7 @@ function parse_vm_conf()
   IFS=',' read -ra disk_list <<< "$disks_str"
   run_vm "$name" "${disk_list[@]}"
 }
+
 
 # --- Main loop ---
 vm_index=0

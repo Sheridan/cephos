@@ -10,7 +10,6 @@ iputils-arping
 iputils-ping
 iputils-tracepath
 isc-dhcp-client
-mtr
 net-tools
 net-tools
 tcpdump

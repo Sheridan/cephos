@@ -60,7 +60,7 @@ root_partition="${root_block_device}1"
 
 if [[ -z "$root_persistence_block_device" ]]
 then
-  root_persistence_partition="${root_block_device}2"
+  root_persistence_partition="${root_block_device}4"
 else
   root_persistence_partition="${root_persistence_block_device}1"
 fi
@@ -93,7 +93,7 @@ function persistences_exists()
 
 function root_persistence_at_root_block_device()
 {
-  [[ "${root_persistence_partition}" == "${root_block_device}2" ]]
+  [[ "${root_persistence_partition}" == "${root_block_device}4" ]]
 }
 
 function is_write_image_only()
@@ -105,77 +105,8 @@ function print_device_info()
 {
   local device="$1"
   echo "Device Info: $device"
-  lsblk -o NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT "$device"
+  lsblk -o NAME,SIZE,PARTLABEL,LABEL,FSTYPE,MODEL,VENDOR,SERIAL,UUID,MOUNTPOINT "$device"
   echo "-------------------------------------"
-}
-
-# Function: get image size in MiB
-function get_image_size_mib()
-{
-  local image_file="$1"
-  local image_size
-  image_size=$(stat -c%s "$image_file")
-  echo $(( image_size / 1024 / 1024 ))
-}
-
-# Function: ask user confirmation
-function ask_confirmation()
-{
-  local prompt_msg="$1"
-  read -rp "$prompt_msg (y/n): " user_answer
-  if [[ "$user_answer" != "y" ]]; then
-    echo "Aborted by user."
-    exit 1
-  fi
-}
-
-# Function: cleanup temporary files
-function cleanup()
-{
-  rm -f "$cephos_image"
-  [[ -n "${persistence_backup_file:-}" && -f "$persistence_backup_file" ]] && rm -f "$persistence_backup_file"
-}
-trap cleanup EXIT
-
-# Function: backup persistence partition filesystem
-function backup_root_persistence()
-{
-  local persist_part="${1}2"
-  local mount_dir
-  mount_dir=$(mktemp -d)
-  persistence_backup_file=$(mktemp)
-
-  echo "Backing up persistence partition: $persist_part"
-  mount "$persist_part" "$mount_dir"
-  tar -C "$mount_dir" -cpf "$persistence_backup_file" .
-  sync
-  umount "$mount_dir"
-  rmdir "$mount_dir"
-}
-
-# Function: restore persistence partition filesystem
-function restore_root_persistence()
-{
-  local persist_part="${1}2"
-  local mount_dir
-  mount_dir=$(mktemp -d)
-
-  echo "Restoring persistence data into: $persist_part"
-  mount "$persist_part" "$mount_dir"
-  tar -C "$mount_dir" -xpf "$persistence_backup_file"
-  sync
-  umount "$mount_dir"
-  rmdir "$mount_dir"
-}
-
-function print_persistence_info()
-{
-  local entry="$1"
-  local persistence_block_device
-  local path
-  IFS=":" read -r persistence_block_device path <<< "$entry"
-  echo "${persistence_block_device} will be mount as ${path}"
-  print_device_info "${persistence_block_device}"
 }
 
 function print_info()
@@ -184,12 +115,12 @@ function print_info()
   local device_size
   local device_mib
 
-  local_img_size=$(get_image_size_mib "$cephos_image")
+  local_img_size=$(get_file_size_mib "$cephos_image")
   device_size=$(blockdev --getsize64 "$root_block_device")
   device_mib=$(( device_size / 1024 / 1024 ))
 
-  echo "Image size: ${local_img_size} MiB"
-  echo "root_block_device device total size: ${device_mib} MiB"
+  echo "CephOS image size: ${local_img_size} MiB"
+  echo "$root_block_device device total size: ${device_mib} MiB"
 
   print_device_info "$root_block_device"
 
@@ -212,6 +143,92 @@ function print_info()
   fi
 }
 
+function get_file_size_mib()
+{
+  local filepath="$1"
+  local file_size
+  file_size=$(stat -c%s "$filepath")
+  echo $(( file_size / 1024 / 1024 ))
+}
+
+# Function: ask user confirmation
+function ask_confirmation()
+{
+  local prompt_msg="$1"
+  read -rp "$prompt_msg (y/n): " user_answer
+  if [[ "$user_answer" != "y" ]]; then
+    echo "Aborted by user."
+    exit 1
+  fi
+}
+
+# Function: cleanup temporary files
+function cleanup()
+{
+  rm -f "$cephos_image"
+  [[ -n "${persistence_backup_file:-}" && -f "$persistence_backup_file" ]] && rm -f "$persistence_backup_file"
+}
+trap cleanup EXIT
+
+function purge_device()
+{
+  local block_device="$1"
+
+  echo "Purging device ${block_device}"
+  dd if=/dev/zero of="${block_device}" bs=1M count=100 conv=fsync
+
+  local disk_size=$(blockdev --getsz "${block_device}")
+  local sectors_100M=$((100*1024*1024/512))    # 204800
+  local seek_lvm=$((disk_size - sectors_100M))
+  dd if=/dev/zero of="${block_device}" bs=512 seek=${seek_lvm} count=${sectors_100M} conv=fsync
+
+  local size_mb=$((disk_size * 512 / 1024 / 1024))
+  local seek_gpt=$((size_mb - 10))
+  dd if=/dev/zero of="${block_device}" bs=1M seek=${seek_gpt} count=10 conv=fsync
+
+  partprobe ${block_device} || blockdev --rereadpt "${block_device}" || true
+  sleep 1
+}
+
+# Function: backup persistence partition filesystem
+function backup_root_persistence()
+{
+  local mount_dir
+  mount_dir=$(mktemp -d)
+  persistence_backup_file=$(mktemp)
+
+  echo "Backing up persistence partition: ${root_persistence_partition}"
+  mount "${root_persistence_partition}" "${mount_dir}"
+  tar -C "${mount_dir}" -cpf "${persistence_backup_file}" .
+  sync
+  umount "${mount_dir}"
+  rmdir "${mount_dir}"
+}
+
+# Function: restore persistence partition filesystem
+function restore_root_persistence()
+{
+  local mount_dir
+  mount_dir=$(mktemp -d)
+
+  echo "Restoring persistence data into: ${root_persistence_partition}"
+  mount "${root_persistence_partition}" "${mount_dir}"
+  tar -C "${mount_dir}" -xpf "${persistence_backup_file}"
+  sync
+  umount "${mount_dir}"
+  rmdir "${mount_dir}"
+}
+
+function print_persistence_info()
+{
+  local entry="$1"
+  local persistence_block_device
+  local path
+  IFS=":" read -r persistence_block_device path <<< "$entry"
+  echo "${persistence_block_device} will be mount as ${path}"
+  print_device_info "${persistence_block_device}"
+}
+
 function extract_cephos_image()
 {
   echo "Extracting embedded image header..."
@@ -222,10 +239,12 @@ function extract_cephos_image()
 
 function write_cephos_to_root()
 {
-  echo "Writing image to block device drive $root_block_device..."
-  dd if="$cephos_image" of="$root_block_device" bs=4M status=progress oflag=sync || { echo "Ошибка записи образа"; exit 1; }
+  purge_device "${root_block_device}"
+  echo "Writing image to block device drive ${root_block_device}..."
+  dd if="${cephos_image}" of="${root_block_device}" bs=4M status=progress oflag=sync || { echo "Ошибка записи образа"; exit 1; }
   sync
-  partprobe "$root_block_device"
+  partprobe "${root_block_device}" &> /dev/null
+  # parted -s "${root_block_device}" set 1 boot on
 }
 
 function make_persistence_conf()
@@ -248,10 +267,13 @@ function make_persistence_conf()
 function write_root_persistence_to_root_block_device()
 {
   echo "Creating persistence partition..."
+  sgdisk -e "${root_block_device}"
+  partprobe "${root_block_device}"
+
   local start_sector
-  start_sector=$(parted -ms "$root_block_device" unit s print free | awk -F: '/free/ {start=$2} END{print start}' | sed 's/s//')
-  parted -s "$root_block_device" mkpart primary ext4 "${start_sector}s" 100%
-  partprobe "$root_block_device"
+  start_sector=$(parted -ms "${root_block_device}" unit s print free | awk -F: '/free/ {start=$2} END{print start}' | sed 's/s//')
+  parted -s "${root_block_device}" mkpart primary ext4 "${start_sector}s" 100%
+  partprobe "${root_block_device}"
   sync
   sleep 2
 }
@@ -294,12 +316,13 @@ function make_persistences()
   fi
 }
 
-function block_device_contains_one_partition()
+# Содержит только cephos image, без дополнительных разделов
+function block_device_is_only_cephos()
 {
   local device_path="$1"
   local partition_count
   partition_count=$(lsblk -ln -o NAME "${device_path}" | grep -c "^$(basename "${device_path}")[0-9]")
-  if (( partition_count == 1 ))
+  if (( partition_count == 3 ))
   then
       return 0
   else
@@ -316,7 +339,7 @@ then
   exit 1
 fi
 
-if is_update && block_device_contains_one_partition "${root_block_device}"
+if is_update && block_device_is_only_cephos "${root_block_device}"
 then
   echo "Обновлять имеет смысл только если persistence раздел на том-же устройстве"
   echo "Запускайте '$0 -R ${root_block_device} -s'"
@@ -329,10 +352,11 @@ then
   exit 1
 fi
 
+echo "--- >>>"
+
+extract_cephos_image
 print_info
-
 ask_confirmation "WARNING: All data on block devices will be destroyed. Continue?"
-
 
 #=== work_mode: update (do backup) ===#
 if is_update
@@ -341,7 +365,6 @@ then
 fi
 
 #=== WRITING IMAGE ===#
-extract_cephos_image
 write_cephos_to_root
 
 if ! is_write_image_only
@@ -364,9 +387,8 @@ then
 fi
 
 echo "Done."
-echo "---"
-
 print_info
+echo "<<< ---"
 
 exit 0
 

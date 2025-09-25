@@ -29,15 +29,8 @@ jobs:
           echo "Using tag: $TAG"
           ls -lh tmp/work/
           mv tmp/work/cephos_installer.run "tmp/work/cephos_installer_${TAG}.run"
+          mv tmp/work/cephos.hybrid.iso    "tmp/work/cephos.${TAG}.hybrid.iso"
           ls -lh tmp/work/
-
-      # - name: Upload to GitHub Release
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     tag_name: ${{ github.event.release.tag_name }}
-      #     files: tmp/work/cephos_installer_*.run
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get fresh Access Token from Yandex
         id: get_token
@@ -53,27 +46,24 @@ jobs:
           echo "::add-mask::$ACCESS_TOKEN"
           echo "token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
-      # - name: Debug token output
-      #   run: echo "Token is -> ${{ steps.get_token.outputs.token }}" | sed 's/./& /g'
-
-      - name: Get Yandex.Disk upload URL
-        id: get_upload_url
+      - name: Upload artifacts to Yandex.Disk
         run: |
           TAG=${GITHUB_REF_NAME}
-          UPLOAD_URL=$(curl -s \
-            -H "Authorization: OAuth ${{ steps.get_token.outputs.token }}" \
-            "https://cloud-api.yandex.net/v1/disk/resources/upload?path=GitHub/cephos/cephos_installer_${TAG}.run&overwrite=true" \
-            | jq -r '.href')
-          if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]; then
-            echo "Failed to get upload URL"
-            exit 1
-          fi
-          echo "upload_url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Upload file to Yandex.Disk
-        run: |
-          TAG=${GITHUB_REF_NAME}
-          curl -T "tmp/work/cephos_installer_${TAG}.run" \
-            -o /dev/null \
-            --progress-bar \
-            "${{ steps.get_upload_url.outputs.upload_url }}"
+          for artifact in cephos_installer_${TAG}.run cephos.${TAG}.hybrid.iso
+          do
+            echo "Uploading ${artifact}..."
+            UPLOAD_URL=$(curl -s \
+              -H "Authorization: OAuth ${{ steps.get_token.outputs.token }}" \
+              "https://cloud-api.yandex.net/v1/disk/resources/upload?path=GitHub/cephos/${artifact}&overwrite=true" \
+              | jq -r '.href')
+            if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]
+            then
+              echo "Failed to get upload URL"
+              exit 1
+            fi
+            curl -T "tmp/work/${artifact}" \
+              -o /dev/null \
+              --progress-bar \
+              "$UPLOAD_URL"
+          done
+          echo "Uploading artefacts done."

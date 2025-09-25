@@ -1,4 +1,6 @@
 debianutils
+eject
+fdisk
 git
 htop
 iotop
@@ -7,6 +9,7 @@ less
 lsof
 mc
 nmap
+parted
 psmisc
 pydf
 rsync
