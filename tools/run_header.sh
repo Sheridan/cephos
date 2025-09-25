@@ -58,9 +58,10 @@ then
 fi
 root_partition="${root_block_device}1"
 
+root_persistence_partition_number_on_root_device=2
 if [[ -z "$root_persistence_block_device" ]]
 then
-  root_persistence_partition="${root_block_device}4"
+  root_persistence_partition="${root_block_device}${root_persistence_partition_number_on_root_device}"
 else
   root_persistence_partition="${root_persistence_block_device}1"
 fi
@@ -93,7 +94,7 @@ function persistences_exists()
 
 function root_persistence_at_root_block_device()
 {
-  [[ "${root_persistence_partition}" == "${root_block_device}4" ]]
+  [[ "${root_persistence_partition}" == "${root_block_device}${root_persistence_partition_number_on_root_device}" ]]
 }
 
 function is_write_image_only()
@@ -244,7 +245,7 @@ function write_cephos_to_root()
   dd if="${cephos_image}" of="${root_block_device}" bs=4M status=progress oflag=sync || { echo "Ошибка записи образа"; exit 1; }
   sync
   partprobe "${root_block_device}" &> /dev/null
-  # parted -s "${root_block_device}" set 1 boot on
+  parted -s "${root_block_device}" set 1 boot on
 }
 
 function make_persistence_conf()
@@ -267,8 +268,6 @@ function make_persistence_conf()
 function write_root_persistence_to_root_block_device()
 {
   echo "Creating persistence partition..."
-  sgdisk -e "${root_block_device}"
-  partprobe "${root_block_device}"
 
   local start_sector
   start_sector=$(parted -ms "${root_block_device}" unit s print free | awk -F: '/free/ {start=$2} END{print start}' | sed 's/s//')

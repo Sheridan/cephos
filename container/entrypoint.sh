@@ -63,9 +63,7 @@ function prepare_config()
 function make_splash_image()
 {
   echo "Publishing CephOS splash"
-  mkdir -p "${live_build_config_dir}/includes.binary/boot/grub" \
-           "${live_build_config_dir}/bootloaders/syslinux"
-  ${project_dir}/tools/logo-to-splash.sh "${project_dir}/logo.png" "${live_build_config_dir}/includes.binary/boot/grub/splash.png"
+  mkdir -p "${live_build_config_dir}/bootloaders/syslinux"
   ${project_dir}/tools/logo-to-splash.sh "${project_dir}/logo.png" "${live_build_config_dir}/bootloaders/syslinux/splash.png"
 }
 
@@ -87,26 +85,21 @@ function configure()
         --apt-recommends false \
         --architecture amd64 \
         --archive-areas "main contrib non-free non-free-firmware" \
-        --binary-images iso-hybrid \
+        --binary-images hdd \
         --bootappend-live "boot=live components hostname=cephos username=cephos noautologin persistence debugfs=off" \
-        --bootloaders "grub-pc grub-efi" \
         --chroot-squashfs-compression-type lz4 \
         --compression lzip \
         --debian-installer none \
         --debootstrap-options "--include=apt-transport-https,ca-certificates,openssl --variant=minbase" \
         --distribution bookworm \
-        --hdd-label CephOS \
+        --hdd-label CEPHOS \
         --initsystem systemd \
         --memtest memtest86+ \
-        --iso-application "CephOS Live" \
-        --iso-preparer "Sheridan <sheridan@babylon-five.ru>" \
-        --iso-publisher "https://github.com/Sheridan/cephos https://t.me/ceph_os" \
-        --iso-volume "CephOS $(get_branch_name)" \
         --system live
 
   publish_info
   make_splash_image
-  set_grub_timeout
+  set_syslinux_timeout
 }
 
 function extract_templates()
@@ -116,44 +109,44 @@ function extract_templates()
   cp -r /usr/share/live/ ${to_path}/
 }
 
-function set_grub_timeout()
+function set_syslinux_timeout()
 {
-  local timeout="5"
-  local bootloader_dir="${live_build_config_dir}/bootloaders/grub-pc"
-  local config_cfg_prod="${bootloader_dir}/config.cfg"
+  local timeout="50"
+  local bootloader_dir="${live_build_config_dir}/bootloaders/syslinux"
+  local config_cfg_prod="${bootloader_dir}/syslinux.cfg"
 
   mkdir -p "${bootloader_dir}"
 
   if [ ! -f "${config_cfg_prod}" ]
   then
-    cp /usr/share/live/build/bootloaders/grub-pc/config.cfg "${config_cfg_prod}"
+    cp /usr/share/live/build/bootloaders/syslinux/syslinux.cfg "${config_cfg_prod}"
   fi
 
-  if grep -q "^set timeout=" "${config_cfg_prod}"
+  if grep -q "^timeout " "${config_cfg_prod}"
   then
-    sed -i "s/^set timeout=.*/set timeout=${timeout}/" "${config_cfg_prod}"
+    sed -i "s/^timeout .*/timeout ${timeout}/" "${config_cfg_prod}"
   else
-    echo "set timeout=${timeout}" >> "${config_cfg_prod}"
+    echo "timeout ${timeout}" >> "${config_cfg_prod}"
   fi
 
-  echo "CephOS GRUB timeout: ${timeout}s"
+  echo "CephOS syslinux timeout: ${timeout}s"
 }
 
 function build()
 {
 	echo "Building image..."
 
-  local result_img_file="${live_build_dir}/live-image-amd64.hybrid.iso"
+  local builded_raw_file="${live_build_dir}/live-image-amd64.img"
 	local result_run_file="${work_dir}/cephos_installer.run"
-  local result_iso_file="${work_dir}/cephos.hybrid.iso"
+  local result_raw_file="${work_dir}/cephos.img"
 
 	cd ${live_build_dir}
   sudo ${live_build} build
 
-	cat ${project_dir}/tools/run_header.sh "${result_img_file}" > "${result_run_file}"
+	cat ${project_dir}/tools/run_header.sh "${builded_raw_file}" > "${result_run_file}"
 	chmod oga+x "${result_run_file}"
-  cp "${result_img_file}" "${result_iso_file}"
-	ls -lah "${result_run_file}" "${result_iso_file}" | awk '{ print $5 " " $9}'
+  cp "${builded_raw_file}" "${result_raw_file}"
+	ls -lah "${result_run_file}" "${result_raw_file}" | awk '{ print $5 " " $9}'
 }
 
 function clean()

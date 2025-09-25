@@ -2,6 +2,7 @@
 
 qemu_bridge_interface="br_qemu"
 qemu_tap_interfaces_prefix="tap_qemu"
+qemu_bridge_mac="02:11:00:22:44:01"
 
 function usage()
 {
@@ -49,14 +50,22 @@ function is_up()
   [[ "$work_mode" == "up" ]]
 }
 
+function request_ip()
+{
+  local interface="${1}"
+  dhcpcd -n ${interface} || dhclient -v ${qemu_bridge_inteinterfacerface}
+}
+
 function network_up()
 {
   echo "Поднимаю мост ${qemu_bridge_interface}..."
   ip link add name ${qemu_bridge_interface} type bridge
+  ip link set dev ${qemu_bridge_interface} address "${qemu_bridge_mac}"
+  ip addr flush dev ${host_master_interface}
   ip link set ${host_master_interface} master ${qemu_bridge_interface}
   ip link set ${host_master_interface} up
   ip link set ${qemu_bridge_interface} up
-  dhclient -v ${qemu_bridge_interface}
+  request_ip ${qemu_bridge_interface}
 }
 
 function delete_tap_interfaces()
@@ -73,10 +82,11 @@ function network_down()
 {
   echo ">>> Опускаю мост ${qemu_bridge_interface}..."
   ip link set ${host_master_interface} nomaster
-  dhclient -v ${host_master_interface}
+  ip addr flush dev ${qemu_bridge_interface}
   delete_tap_interfaces
   ip link set ${qemu_bridge_interface} down
   ip link delete ${qemu_bridge_interface} type bridge
+  request_ip ${host_master_interface}
 }
 
 if is_up

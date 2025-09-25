@@ -11,6 +11,8 @@ base_vnc_disp=10   # :10, :11 ...
 qemu_tap_interfaces_prefix="tap_qemu"
 qemu_bridge_interface="br_qemu"
 
+declare -A quemu_pids=()
+
 conf_str="${1:-}"
 
 if [[ -z "$conf_str" ]]; then
@@ -34,20 +36,16 @@ function create_qemu_hdd()
 function up_vm_tap_interface()
 {
   local vm_tap_interface="$1"
-  echo "Создаю TAP-интерфейс ${vm_tap_interface} для VM ${vmname}..."
-  # создаём TAP, разрешаем работать root'у
+  echo "Создаю TAP-интерфейс ${vm_tap_interface}..."
   ip tuntap add dev "${vm_tap_interface}" mode tap user "$(id -un)"
-  # подключаем его к мосту
   ip link set "${vm_tap_interface}" master "${qemu_bridge_interface}"
-  # включаем TAP
   ip link set "${vm_tap_interface}" up
 }
 
 function down_vm_tap_interface()
 {
   local vm_tap_interface="$1"
-  echo "Удаляю TAP-интерфейс ${vm_tap_interface} для VM ${vmname}..."
-  # выключаем и сносим
+  echo "Удаляю TAP-интерфейс ${vm_tap_interface}..."
   ip link set "${vm_tap_interface}" down 2>/dev/null || true
   ip link delete "${vm_tap_interface}" 2>/dev/null || true
 }
@@ -83,25 +81,21 @@ function run_vm()
   local mac="52:54:00:aa:bb:$(printf '%02x' $idx)"
 
   echo ">>> Запуск ВМ $vmname (VNC :$vnc_disp)"
-  # up_vm_tap_interface "$vm_tap_interface"
-    #   -netdev tap,id=net0,ifname=${vm_tap_interface},script=no,downscript=no \
-    # -device virtio-net-pci,netdev=net0,mac=${mac} \
-  qemu-system-x86_64 \
-    -enable-kvm \
-    -m ${memory_mb} \
-    -smp ${cpus} \
-    "${drives[@]}" \
-    -boot order=a \
-    -display vnc=:$vnc_disp \
-    -name "${vmname}" \
-    &
-  # local pid=$!
-  # (
-  #   if wait "$pid"
-  #   then
-  #     down_vm_tap_interface "$vm_tap_interface"
-  #   fi
-  # ) &
+  up_vm_tap_interface "$vm_tap_interface"
+  (
+    qemu-system-x86_64 \
+      -enable-kvm \
+      -m ${memory_mb} \
+      -smp ${cpus} \
+      "${drives[@]}" \
+      -boot order=a \
+      -netdev tap,id=net0,ifname=${vm_tap_interface},script=no,downscript=no \
+      -device virtio-net-pci,netdev=net0,mac=${mac} \
+      -display vnc=:$vnc_disp \
+      -name "${vmname}" \
+  ) &
+  local pid=$!
+  quemu_pids[$pid]="${vm_tap_interface}"
 }
 
 function parse_vm_conf()
@@ -120,6 +114,17 @@ IFS=';' read -ra vms <<< "$conf_str"
 for vmdef in "${vms[@]}"
 do
   parse_vm_conf "${vmdef}"
+done
+
+for pid in "${!quemu_pids[@]}"
+do
+  if wait "$pid"
+  then
+    down_vm_tap_interface "${quemu_pids[$pid]}"
+  else
+    echo "${quemu_pids[$pid]} завершился с ошибкой"
+    down_vm_tap_interface "${quemu_pids[$pid]}"
+  fi
 done
 
 wait

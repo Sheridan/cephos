@@ -29,7 +29,7 @@ jobs:
           echo "Using tag: $TAG"
           ls -lh tmp/work/
           mv tmp/work/cephos_installer.run "tmp/work/cephos_installer_${TAG}.run"
-          mv tmp/work/cephos.hybrid.iso    "tmp/work/cephos.${TAG}.hybrid.iso"
+          mv tmp/work/cephos.img           "tmp/work/cephos_${TAG}.img"
           ls -lh tmp/work/
 
       - name: Get fresh Access Token from Yandex
@@ -49,7 +49,7 @@ jobs:
       - name: Upload artifacts to Yandex.Disk
         run: |
           TAG=${GITHUB_REF_NAME}
-          for artifact in cephos_installer_${TAG}.run cephos.${TAG}.hybrid.iso
+          for artifact in cephos_installer_${TAG}.run cephos_${TAG}.img
           do
             echo "Uploading ${artifact}..."
             UPLOAD_URL=$(curl -s \

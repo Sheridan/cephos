@@ -1,41 +1,9 @@
 tmp/
-# Игнорировать все сгенерированные артефакты сборки
-lb/cache/
-lb/chroot/
-lb/binary/
-lb/local/
-lb/config/binary
-lb/config/bootstrap
-lb/config/chroot
-lb/config/common
-lb/config/source
-lb/tmp/
 
-# Игнорировать ISO и подобные образы
-lb/*.iso
-lb/*.hybrid.iso
-lb/*.img
-lb/*.bin
-
-# Игнорировать временные логи
 build.log
 logs/
 *.log
 
-# Игнорировать резервные и временные файлы редакторов
 *~
 *.swp
 *.swo
-
-# Игнорировать файлы создаваемые lb build
-lb/.config/
-lb/.stage/
-lb/.build/
-
-# Разрешить к коммиту основные директории конфигурации
-# !lb/auto/
-# !lb/config/package-lists/
-# !lb/config/hooks/
-# !lb/config/includes.chroot/
-# !lb/config/includes.binary/
-# !lb/config/includes.installer/

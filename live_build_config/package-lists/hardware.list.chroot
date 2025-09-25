@@ -1,4 +1,6 @@
 dmidecode
+eject
+fdisk
 firmware-amd-graphics
 firmware-linux
 firmware-linux-free
