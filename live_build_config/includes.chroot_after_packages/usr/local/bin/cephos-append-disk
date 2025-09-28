@@ -57,6 +57,6 @@ sudo ceph-volume \
     lvm create \
   --data "${block_device}" \
   --objectstore bluestore
-set_file_rights
+set_fs_permissions
 
 log_info "OSD successfully created on ${block_device}"

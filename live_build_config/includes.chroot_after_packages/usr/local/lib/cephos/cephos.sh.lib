@@ -70,19 +70,28 @@ function check_hostname()
   fi
 }
 
-function set_file_rights()
+function set_recursive_permissions()
+{
+  local target_directory="$1"
+
+  log_verbose "Setting permissions for ${target_directory}"
+
+  sudo chown -R ceph:ceph "${target_directory}"
+  sudo find "${target_directory}" -type d -exec chmod 750 {} \;
+  sudo find "${target_directory}" -type f -exec chmod 640 {} \;
+}
+
+function set_fs_permissions()
 {
   log_verbose "Setting permissions"
-  sudo chown -R ceph:ceph ${ceph_conf_dir}
-  sudo chown -R ceph:ceph ${ceph_data_dir}
-  sudo chmod 640 ${ceph_main_conf}
-  sudo chmod 600 ${ceph_conf_dir}/*.keyring
+  set_recursive_permissions "${ceph_conf_dir}"
+  set_recursive_permissions "${ceph_data_dir}"
 }
 
 function ceph_crash_up()
 {
   sudo mkdir -p /var/lib/ceph/crash/posted
-  set_file_rights
+  set_fs_permissions
   sudo systemctl enable --now ceph-crash.service
 }
 
@@ -106,7 +115,6 @@ cluster_network=$(get_environment "CLUSTER_NETWORK" "10.0.0.0/8")
 public_ip=$(get_environment "PUBLIC_IP" "10.0.0.100")
 cluster_ip=$(get_environment "CLUSTER_IP" "10.0.0.101")
 
-log_info "Main conf file: ${ceph_main_conf}"
+# log_info "Main conf file: ${ceph_main_conf}"
 log_info "Ceph fsid: ${ceph_fsid}"
-log_info "Ceph mon id: ${mon_id}"
-log_info "Ceph mgr id: ${mgr_id}"
+log_info "Ceph id: [mon:${mon_id}], [mgr:${mgr_id}], [mds:${mds_id}]"

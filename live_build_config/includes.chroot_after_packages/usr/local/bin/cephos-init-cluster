@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 . /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/network.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS Cluster Initialization Script
@@ -71,11 +72,14 @@ sudo ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring 
 sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
 sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
 
+make_hosts_record "${public_ip}" "$(hostname -s)"
+make_hosts_record "${cluster_ip}" "$(hostname -s)-cluster"
+
 log_verbose "Creating configuration ${ceph_main_conf}"
 cat <<EOF | sudo tee ${ceph_main_conf}
 [global]
 fsid = ${ceph_fsid}
-mon_initial_members = ${public_ip}
+mon_initial_members = $(hostname -s)
 mon_host = ${public_ip}
 
 public_network = ${public_network}
@@ -98,7 +102,7 @@ osd_scrub_sleep = 0.1
 osd_deep_scrub_randomize_ratio = 0.5
 EOF
 
-set_file_rights
+set_fs_permissions
 
 
 

@@ -39,7 +39,7 @@ then
   log_info "Creating keys"
   sudo ceph auth get-or-create mgr.${mgr_id} mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o ${mgr_data_dir}/keyring
 
-  set_file_rights
+  set_fs_permissions
 
   log_info "Starting service ceph-mgr@${mgr_id}"
   sudo systemctl enable --now ceph-mgr@${mgr_id}.service

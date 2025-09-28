@@ -35,7 +35,7 @@ log_info "Creating cephfs"
 sudo ceph fs new cephfs cephfs_metadata cephfs_data
 sudo mkdir -p "${mds_data_dir}"
 sudo ceph auth get-or-create mds.${mds_id} mds 'allow *' osd 'allow rwx' mon 'allow rw' | sudo tee ${mds_data_dir}/keyring > /dev/null
-set_file_rights
+set_fs_permissions
 
 log_info "Starting service ceph-mds@${mds_id}"
 sudo systemctl enable --now ceph-mds@${mds_id}.service

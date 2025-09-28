@@ -33,18 +33,18 @@ then
   log_info "MON not found on this host, creating new MON"
   log_info "Preparing map for ${mon_id}"
   sudo monmaptool --create --add ${mon_id} ${public_ip} --fsid ${ceph_fsid} ${ceph_conf_dir}/monmap --enable-all-features
-  set_file_rights
+  set_fs_permissions
 
   log_info "Creating directories ${mon_data_dir}"
   sudo mkdir -p "${mon_data_dir}"
-  set_file_rights
+  set_fs_permissions
 
   log_info "Creating mon instance ${mon_id}"
   sudo ceph-mon --mkfs -i "${mon_id}" \
     --monmap "${ceph_conf_dir}/monmap" \
     --keyring "${ceph_conf_dir}/ceph.mon.keyring" \
     --conf "${ceph_main_conf}"
-  set_file_rights
+  set_fs_permissions
 
   log_info "Starting service ceph-mon@${mon_id}"
   sudo systemctl enable --now ceph-mon@${mon_id}.service

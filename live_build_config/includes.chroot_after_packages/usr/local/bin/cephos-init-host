@@ -58,15 +58,15 @@ function restart_shell()
   log_verbose "Reinitializing shell ${current_shell}"
   case "${current_shell}" in
     bash) exec bash ;;
-    zsh)  exec zsh ;;
-    *)    log_cry "Unknown shell: ${current_shell}. Only bash and zsh are supported. Relogin to update hostname" ;;
+     zsh)  exec zsh ;;
+       *)    log_cry "Unknown shell: ${current_shell}. Only bash and zsh are supported. Relogin to update hostname" ;;
   esac
 }
 
 if [[ "$(hostname -s)" == "${build_hostname}" ]]
 then
   log_info "Setting hostname to ${_hostname} and domain to ${_domain}"
-  sudo sed -i "s/\b${build_hostname}\b/ ${_hostname} /g" "/etc/hosts"
+  sudo sed -i.bak -E "s/[[:space:]]*\b${build_hostname}\b//g; s/[[:space:]]+/ /g" /etc/hosts
   sudo domainname "${_domain}"
   sudo hostnamectl hostname "${_hostname}"
   restart_shell
