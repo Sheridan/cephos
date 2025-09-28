@@ -1,0 +1,4 @@
+# empty
+# all configurations in interfaces.d
+
+source /etc/network/interfaces.d/*

@@ -3,6 +3,8 @@ dnsutils
 ethtool
 iftop
 ifupdown
+ipcalc
+ipcalc-ng
 iperf
 iproute2
 iptraf-ng

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+for unit in $(systemctl list-unit-files | egrep 'ceph.*service' | awk '{print $1}')
+do
+  systemctl disable $unit || true
+done
+
+for dr in "/etc/ceph" "/var/lib/ceph" "/var/log/ceph" "/var/run/ceph"
+do
+  rm -rf ${dr}/*
+done

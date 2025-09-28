@@ -3,8 +3,12 @@
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0
-Example: $0
+Usage: $0 [-hv]
+Initialize a Ceph Manager (MGR) node.
+
+Options:
+  -h        Show this help message and exit
+  -v        Enable verbose mode
 EOF
 
 set -euo pipefail
@@ -13,10 +17,10 @@ set -euo pipefail
 while getopts ":hv" opt
 do
   case ${opt} in
-    h) help; exit 0 ;;
+    h) usage; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -29,19 +33,19 @@ if ! sudo test -d "${mgr_data_dir}"
 then
   log_info "MGR not found on this host, creating new MGR"
 
-  log_info "Создание каталогов ${mgr_data_dir}"
+  log_info "Creating directories ${mgr_data_dir}"
   sudo mkdir -p "${mgr_data_dir}"
 
-  log_info "Создание ключей"
+  log_info "Creating keys"
   sudo ceph auth get-or-create mgr.${mgr_id} mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o ${mgr_data_dir}/keyring
 
   set_file_rights
 
-  log_info "Старт сервиса ceph-mgr@${mgr_id}"
+  log_info "Starting service ceph-mgr@${mgr_id}"
   sudo systemctl enable --now ceph-mgr@${mgr_id}.service
   sleep 5
 
-  log_info "Настройка"
+  log_info "Configuration"
   sudo ceph mgr module disable restful
   sudo ceph mgr module enable stats
   sudo ceph mgr module enable dashboard

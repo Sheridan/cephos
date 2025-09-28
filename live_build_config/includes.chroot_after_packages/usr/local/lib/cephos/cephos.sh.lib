@@ -57,23 +57,13 @@ function get_environment()
   read_config_var "/etc/default/ceph" "${var_name}" "${default_value}"
 }
 
-function check_user()
-{
-  local target_user="$1"
-  if [[ "$(id -un)" != "${target_user}" ]]
-  then
-    log_err "Must be run as user ${target_user}"
-    exit 1
-  fi
-}
-
 function check_hostname()
 {
   if [[ "$0" == "/usr/local/bin/cephos-init-host" ]]
   then
     return 0
   fi
-  if [[ "$(hostname -s)" == "debian" ]]
+  if [[ "$(hostname -s)" == "${build_hostname}" ]]
   then
     log_err "Change hostname please"
     exit 1
@@ -82,23 +72,21 @@ function check_hostname()
 
 function set_file_rights()
 {
-  log_verbose "Выставление прав"
+  log_verbose "Setting permissions"
   sudo chown -R ceph:ceph ${ceph_conf_dir}
   sudo chown -R ceph:ceph ${ceph_data_dir}
   sudo chmod 640 ${ceph_main_conf}
   sudo chmod 600 ${ceph_conf_dir}/*.keyring
 }
 
-function manage_services
+function ceph_crash_up()
 {
-  local what="$1"
-  for svc in "ceph-mon@${mon_id}" "ceph-mgr@${mgr_id}"
-  do
-    sudo systemctl $what $svc
-  done
+  sudo mkdir -p /var/lib/ceph/crash/posted
+  set_file_rights
+  sudo systemctl enable --now ceph-crash.service
 }
 
-log_verbose "Подготовка данных"
+log_verbose "Preparing data"
 check_hostname
 ceph_conf_dir="/etc/ceph"
 ceph_data_dir="/var/lib/ceph"

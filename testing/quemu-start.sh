@@ -1,53 +1,79 @@
 #!/usr/bin/env bash
 
+. live_build_config/includes.chroot_after_packages/usr/local/lib/cephos/base.sh.lib
+
+read -r -d '' help_text <<EOF
+  Usage: $0 -s <cluster_conf_string> [-m <memory>] [-d <disk_size>] [-c <cpus>] [-r]
+  Options:
+    -s: VM cluster string
+        String format: 'name:flash,flash2...;name1:flash3,flash4,flash5...' etc.
+    -m: VM memory (e.g., 16G, 8192M)
+        Default: 16G
+    -d: VM disk size (e.g., 8G, 100G)
+        Default: 8G
+    -c: VM CPUs (e.g., 2, 4)
+        Default: 2
+    -r: Force recreate VM disks
+  Examples:
+    $0 -s 'one:/dev/sdm,/dev/sdn;two:/dev/sdg,/dev/sdj'
+    $0 -s 'one:/dev/sdm,/dev/sdn' -m 32G
+    $0 -s 'one:/dev/sdm,/dev/sdn' -d 20G -c 4
+    $0 -s 'one:/dev/sdm,/dev/sdn' -r
+EOF
+
 set -euo pipefail
 
-disk_size="8G"
-memory_mb=8192
-cpus=2
+# --- options parse ---
+declare -A processes_pids=()
 
-base_vnc_disp=10   # :10, :11 ...
+vm_disk_size="8G"
+vm_memory="16G"
+vm_cpus=2
 
-qemu_tap_interfaces_prefix="tap_qemu"
-qemu_bridge_interface="br_qemu"
+base_ssh_port=2200
+base_http_port=8000
+base_vnc_disp=10
 
-declare -A quemu_pids=()
+cluster_conf_string=""
+force_recreate=0
+while getopts ":s:d:c:m:rhv" opt
+do
+  case ${opt} in
+    s) cluster_conf_string="${OPTARG}" ;;
+    m) vm_memory="${OPTARG}" ;;
+    d) vm_disk_size="${OPTARG}" ;;
+    c) vm_cpus="${OPTARG}" ;;
+    r) force_recreate=1 ;;
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
 
-conf_str="${1:-}"
-
-if [[ -z "$conf_str" ]]; then
-  echo "Использование: $0 'one:/dev/sdm,/dev/sdn;two:/dev/sdg,/dev/sdj'"
-  echo "Формат строки: 'имя:флешка,флешка2...;имя1:флешка3,флешка4,флешка5...' и так далее"
-  exit 1
+if [[ -z "$cluster_conf_string" ]]
+then
+  wrong_opt "Error: -s option is required"
 fi
 
-mkdir -p tmp
+# --- options parse ---
 
 function create_qemu_hdd()
 {
   local img="$1"
+  if (( force_recreate ))
+  then
+    log_info "Removing existing $img..."
+    rm -f "$img"
+  fi
+
   if [[ ! -f "$img" ]]
   then
-    echo "Создаю $img (${disk_size})..."
-    qemu-img create -f qcow2 "$img" ${disk_size}
+    log_info "Creating $img (${vm_disk_size})..."
+    qemu-img create -f qcow2 "${img}" "${vm_disk_size}"
+  else
+    log_info "Using existing ${img} (${vm_disk_size})"
   fi
-}
-
-function up_vm_tap_interface()
-{
-  local vm_tap_interface="$1"
-  echo "Создаю TAP-интерфейс ${vm_tap_interface}..."
-  ip tuntap add dev "${vm_tap_interface}" mode tap user "$(id -un)"
-  ip link set "${vm_tap_interface}" master "${qemu_bridge_interface}"
-  ip link set "${vm_tap_interface}" up
-}
-
-function down_vm_tap_interface()
-{
-  local vm_tap_interface="$1"
-  echo "Удаляю TAP-интерфейс ${vm_tap_interface}..."
-  ip link set "${vm_tap_interface}" down 2>/dev/null || true
-  ip link delete "${vm_tap_interface}" 2>/dev/null || true
 }
 
 function run_vm()
@@ -55,47 +81,73 @@ function run_vm()
   local vmname=$1; shift
   local disks=("$@")
 
-  local vm_tap_interface="${qemu_tap_interfaces_prefix}_${vmname}"
-
   local qemu_hdd_0="tmp/${vmname}-hdd0.img"
   local qemu_hdd_1="tmp/${vmname}-hdd1.img"
-  create_qemu_hdd "$qemu_hdd_0"
-  create_qemu_hdd "$qemu_hdd_1"
+  create_qemu_hdd "${qemu_hdd_0}"
+  create_qemu_hdd "${qemu_hdd_1}"
 
-  local drives=()
+  local vm_drives=()
   for rawdev in "${disks[@]}"
   do
-    if [[ ! -b "$rawdev" ]]
+    if [[ ! -b "${rawdev}" ]]
     then
-      echo "Ошибка: $rawdev не блочное устройство"
-      exit 1
+      log_cry "Error: ${rawdev} is not a block device"
     fi
-    drives+=("-drive" "if=virtio,file=$rawdev,format=raw,cache=none")
+    vm_drives+=("-drive" "if=virtio,file=${rawdev},format=raw,cache=none")
   done
 
-  drives+=("-drive" "if=virtio,file=$qemu_hdd_0,format=qcow2")
-  drives+=("-drive" "if=virtio,file=$qemu_hdd_1,format=qcow2")
+  vm_drives+=("-drive" "if=virtio,file=${qemu_hdd_0},format=qcow2")
+  vm_drives+=("-drive" "if=virtio,file=${qemu_hdd_1},format=qcow2")
 
   local idx=$((vm_index++))
   local vnc_disp=$((base_vnc_disp + idx))
-  local mac="52:54:00:aa:bb:$(printf '%02x' $idx)"
+  local ssh_port=$((base_ssh_port + idx))
+  local http_port=$((base_http_port + idx))
+  local pidfile
+  local pid
+  pidfile=$(mktemp -u)
 
-  echo ">>> Запуск ВМ $vmname (VNC :$vnc_disp)"
-  up_vm_tap_interface "$vm_tap_interface"
-  (
-    qemu-system-x86_64 \
+  log_info "Starting VM ${vmname} (VNC :${vnc_disp}): cpus: ${vm_cpus}, mem: ${vm_memory}, disks: ${vm_disk_size}"
+  qemu-system-x86_64 \
       -enable-kvm \
-      -m ${memory_mb} \
-      -smp ${cpus} \
-      "${drives[@]}" \
+      -m ${vm_memory} \
+      -smp ${vm_cpus} \
+      "${vm_drives[@]}" \
       -boot order=a \
-      -netdev tap,id=net0,ifname=${vm_tap_interface},script=no,downscript=no \
-      -device virtio-net-pci,netdev=net0,mac=${mac} \
-      -display vnc=:$vnc_disp \
+      -nic user,hostfwd=tcp::${ssh_port}-:22,hostfwd=tcp::${http_port}-:8080,model=virtio-net-pci \
+      -nic vde,sock=tmp/vde1,model=virtio-net-pci \
+      -nic vde,sock=tmp/vde2,model=virtio-net-pci \
+      -display vnc=:${vnc_disp} \
       -name "${vmname}" \
-  ) &
-  local pid=$!
-  quemu_pids[$pid]="${vm_tap_interface}"
+      -daemonize \
+      -pidfile "${pidfile}"
+  local exit_code=$?
+  if [[ $exit_code -eq 0 ]]
+  then
+    pid=$(cat "${pidfile}")
+    processes_pids[$pid]="vm: ${vmname}"
+  else
+    log_cry "Failed to start VM ${vmname} (exit code: ${exit_code})"
+  fi
+}
+
+function run_vde_switch()
+{
+  local vde_path="$1"
+  local pidfile
+  local pid
+  pidfile=$(mktemp -u)
+
+  log_info "Starting switch ${vde_path}"
+  vde_switch --hub -sock "${vde_path}" --daemon --pidfile "${pidfile}"
+  local exit_code=$?
+  if [[ $exit_code -eq 0 ]]
+  then
+    pid=$(cat "${pidfile}")
+    processes_pids[$pid]="vde: ${vde_path}"
+  else
+    log_cry "Failed to start vde_switch for ${vde_path} (exit code: ${exit_code})"
+  fi
 }
 
 function parse_vm_conf()
@@ -103,28 +155,48 @@ function parse_vm_conf()
   local vmdef="$1"
   local name="${vmdef%%:*}"
   local disks_str="${vmdef#*:}"
-  IFS=',' read -ra disk_list <<< "$disks_str"
+  IFS=',' read -ra disk_list <<< "${disks_str}"
   run_vm "$name" "${disk_list[@]}"
 }
 
+function cleanup()
+{
+  local exit_code=$?
+  log_info "Script finished (exit code: ${exit_code}). Terminating processes..."
+  local pid
+  for pid in "${!processes_pids[@]}"
+  do
+    local description="${processes_pids[$pid]}"
+    if kill -0 "$pid" 2>/dev/null
+    then
+      log_info "Stopping [${pid}] -> ${description}"
+      kill "${pid}" 2>/dev/null || true
+      sleep 0.5
+      if kill -0 "${pid}" 2>/dev/null
+      then
+        log_wrn "[${pid}] (${description}) did not complete, sending SIGKILL"
+        kill -9 "${pid}" 2>/dev/null || true
+      fi
+    else
+      log_wrn "[${pid}] (${description}) no longer works"
+    fi
+  done
+  echo "Cleanup completed."
+}
+trap cleanup EXIT
+trap cleanup ERR
+trap cleanup INT
 
 # --- Main loop ---
+mkdir -p tmp
+run_vde_switch "tmp/vde1"
+run_vde_switch "tmp/vde2"
+sleep 1
 vm_index=0
-IFS=';' read -ra vms <<< "$conf_str"
+IFS=';' read -ra vms <<< "${cluster_conf_string}"
 for vmdef in "${vms[@]}"
 do
   parse_vm_conf "${vmdef}"
 done
 
-for pid in "${!quemu_pids[@]}"
-do
-  if wait "$pid"
-  then
-    down_vm_tap_interface "${quemu_pids[$pid]}"
-  else
-    echo "${quemu_pids[$pid]} завершился с ошибкой"
-    down_vm_tap_interface "${quemu_pids[$pid]}"
-  fi
-done
-
-wait
+ask_confirmation "Running. Stop it?"

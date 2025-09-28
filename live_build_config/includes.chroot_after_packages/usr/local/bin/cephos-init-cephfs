@@ -3,8 +3,11 @@
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0
-Example: $0
+CephOS CephFS Initialization Script
+
+Options:
+-h           Display this help message
+-v           Enable verbose output
 EOF
 
 set -euo pipefail
@@ -13,26 +16,26 @@ set -euo pipefail
 while getopts ":hv" opt
 do
   case ${opt} in
-    h) help; exit 0 ;;
+    h) usage; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
 check_user "cephos"
 
-log_info "Создание пулов cephfs"
+log_info "Creating cephfs pools"
 sudo ceph osd pool create cephfs_metadata
 sudo ceph osd pool set    cephfs_metadata bulk false
 sudo ceph osd pool create cephfs_data
 sudo ceph osd pool set    cephfs_data     bulk true
 
-log_info "Создание cephfs"
+log_info "Creating cephfs"
 sudo ceph fs new cephfs cephfs_metadata cephfs_data
 sudo mkdir -p "${mds_data_dir}"
 sudo ceph auth get-or-create mds.${mds_id} mds 'allow *' osd 'allow rwx' mon 'allow rw' | sudo tee ${mds_data_dir}/keyring > /dev/null
 set_file_rights
 
-log_info "Старт сервиса ceph-mds@${mds_id}"
+log_info "Starting service ceph-mds@${mds_id}"
 sudo systemctl enable --now ceph-mds@${mds_id}.service

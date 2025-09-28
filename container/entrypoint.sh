@@ -1,6 +1,6 @@
 #!/bin/bash
 
-live_build="lb --color --verbose"
+live_build="lb --color" #--verbose
 project_dir="${HOME}/project"
 work_dir="${HOME}/work"
 live_build_dir="${work_dir}/live_build"
@@ -73,7 +73,6 @@ function publish_info()
 	echo "$(get_branch_name)"                 > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_version
 	echo "https://github.com/Sheridan/cephos" > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_repository
 	echo "https://t.me/ceph_os"               > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_telegram
-
 }
 
 function configure()
@@ -154,7 +153,10 @@ function clean()
 	echo "Cleaning data..."
 	sudo rm -rf ${live_build_dir}
 }
-trap clean EXIT SIGINT SIGTERM
+trap clean EXIT
+trap clean ERR
+trap clean INT
+trap clean TERM
 
 prepare_config
 configure

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-log_cry "Не закончено"
-
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
 
@@ -17,16 +15,16 @@ while getopts ":d:hv" opt
 do
   case ${opt} in
     d) block_device="${OPTARG}" ;;
-    h) help; exit 0 ;;
+    h) usage; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
 
 if [[ -z "$block_device" ]]
 then
-  wrong_opt "Не указаны опции"
+  wrong_opt "Options not specified"
 fi
 
 if [ ! -b "$block_device" ]
@@ -35,11 +33,11 @@ then
 fi
 # --- options parse ---
 check_user "cephos"
-ask_confirmation "Эта операция уничтожит все данные на диске ${block_device}. Продолжать?"
+ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 
 function format_partitions()
 {
-  log_info "Форматирование..."
+  log_info "Creating swap on ${block_device}..."
   sudo mkswap -L swap "${block_device}"
 }
 
@@ -47,19 +45,12 @@ function update_fstab()
 {
   local uuid_swap=$(sudo blkid -s UUID -o value "${block_device}")
 
-  log_info "Добавляем записи в /etc/fstab..."
-  echo "UUID=$uuid_swap none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
-
-
+  log_info "Adding entries to /etc/fstab..."
+  echo "UUID=${uuid_swap} none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
 }
 
-
-function main()
-{
-  format_partitions
-  update_fstab
-
-  sudo swapon "${block_device}"
-}
-
-main
+format_partitions
+update_fstab
+sudo swapon "${block_device}"
+sudo free -h
+log_info "Done"

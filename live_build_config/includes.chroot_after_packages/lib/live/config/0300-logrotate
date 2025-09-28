@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -e
-
-systemctl -q is-enabled logrotate.timer || systemctl enable logrotate.timer

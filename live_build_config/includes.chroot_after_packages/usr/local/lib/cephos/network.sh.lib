@@ -1,0 +1,11 @@
+#!/bin/bash
+
+function interface_exists()
+{
+  local interface_name="$1"
+  if ip link show "$interface_name" &>/dev/null
+  then
+    return 0
+  fi
+  return 1
+}

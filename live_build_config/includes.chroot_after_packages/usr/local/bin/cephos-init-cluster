@@ -3,8 +3,20 @@
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -P <public_networkwork> -C <cluster_network> -p <public_ip> -c <cluster_ip>
-Example: $0 -P 10.10.0.0/24 -C 10.20.0.0/24 -p 10.10.0.100 -c 10.20.0.100
+CephOS Cluster Initialization Script
+
+Options:
+-P <public_network>  Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
+-C <cluster_network>  Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
+-p <public_ip>        Specify the public IP address for this host
+-c <cluster_ip>       Specify the cluster IP address for this host
+-h                   Display this help message
+-v                   Enable verbose output
+
+Examples:
+# Initialize cluster with network and IP configurations
+$0 -P 10.10.0.0/24 -C 10.20.0.0/24 -p 10.10.0.100 -c 10.20.0.100
+
 EOF
 
 set -euo pipefail
@@ -14,23 +26,23 @@ public_network=""
 cluster_network=""
 public_ip=""
 cluster_ip=""
-while getopts ":P:C:p:c:n:hv" opt
+while getopts ":P:C:p:c:hv" opt
 do
   case ${opt} in
     P) public_network="${OPTARG}" ;;
     C) cluster_network="${OPTARG}" ;;
     p) public_ip="${OPTARG}" ;;
     c) cluster_ip="${OPTARG}" ;;
-    h) help; exit 0 ;;
+    h) usage; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
 
 if [[ -z "$public_network" || -z "$cluster_network"  ]]
 then
-  wrong_opt "Не указаны опции"
+  wrong_opt "Options not specified"
 fi
 # --- options parse ---
 
@@ -48,22 +60,22 @@ set_environment "CLUSTER_IP" "${cluster_ip}"
 
 log_info "Init cluster with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
 
-log_verbose "Создание директорий"
+log_verbose "Creating directories"
 sudo mkdir -p ${ceph_conf_dir}
 sudo mkdir -p ${ceph_data_dir}/bootstrap-mds ${ceph_data_dir}/bootstrap-mgr ${ceph_data_dir}/bootstrap-osd ${ceph_data_dir}/bootstrap-rgw
 
-log_verbose "Создание ключей"
+log_verbose "Creating keys"
 sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
 sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mgr 'allow *' --cap mds 'allow *'
 sudo ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
 sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
 
-log_verbose "Создание конфигурации ${ceph_main_conf}"
+log_verbose "Creating configuration ${ceph_main_conf}"
 cat <<EOF | sudo tee ${ceph_main_conf}
 [global]
 fsid = ${ceph_fsid}
-mon_initial_members = $(hostname -s)
+mon_initial_members = ${public_ip}
 mon_host = ${public_ip}
 
 public_network = ${public_network}
@@ -88,4 +100,6 @@ EOF
 
 set_file_rights
 
-log_info "Базовая инициализация завершена"
+
+
+log_info "Basic initialization completed"

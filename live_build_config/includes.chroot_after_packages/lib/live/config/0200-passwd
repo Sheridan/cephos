@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+
+function setup_user()
+{
+  local user_name="$1"
+  local user_pass="$2"
+
+  echo "Setting up user ${user_name}"
+  echo "${user_name}:${user_pass}" | chpasswd
+}
+
+flag_file="/var/lib/live/config/passwd"
+if [ ! -f $flag_file ]
+then
+  root_pw=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
+  setup_user "root" "${root_pw}"
+
+  setup_user "cephos" "cephos"
+  usermod -aG ceph cephos
+
+  touch $flag_file
+fi

@@ -5,7 +5,19 @@
 
 read -r -d '' help_text <<EOF
 Usage: $0 -d <block_device>
-Example: $0 -d /dev/sdb
+This script appends a block device to a Ceph cluster by creating a new OSD (Object Storage Daemon).
+
+Options:
+  -d <block_device>  Specify the block device to append (e.g., /dev/sdb)
+  -h                Show this help message
+  -v                Enable verbose output
+
+Examples:
+  # Append /dev/sdb to the cluster
+  $0 -d /dev/sdb
+
+  # Append /dev/sdc with verbose output
+  $0 -d /dev/sdc -v
 EOF
 
 set -euo pipefail
@@ -15,16 +27,16 @@ while getopts ":d:hv" opt
 do
   case ${opt} in
     d) block_device="${OPTARG}" ;;
-    h) help; exit 0 ;;
+    h) echo "${help_text}"; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
 
 if [[ -z "$block_device" ]]
 then
-  wrong_opt "Не указаны опции"
+  wrong_opt "Options not specified"
 fi
 
 if [ ! -b "$block_device" ]
@@ -34,13 +46,13 @@ fi
 # --- options parse ---
 
 check_user "cephos"
-ask_confirmation "Эта операция уничтожит все данные на диске ${block_device}. Продолжать?"
+ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 
 log_info "Appending disk ${block_device} to mon ${mon_id}"
 
 purge_device "${block_device}"
 
-log_info "Создание тома на устройстве ${block_device}"
+log_info "Creating volume on device ${block_device}"
 sudo ceph-volume \
     lvm create \
   --data "${block_device}" \

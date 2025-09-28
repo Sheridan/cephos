@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/network.sh.lib
+
+read -r -d '' help_text <<EOF
+$0 is used to configure network interfaces on CephOS systems.
+
+Options:
+ -i <interface>: (Required) Specifies the network interface to configure (e.g., eth0, ens3)
+ -n <new_interface_name>: (Optional) Specifies a new name for the interface that will persist across reboots
+ -a <address>: (Required for static IP) The IP address to assign to the interface
+ -m <netmask>: (Required for static IP) The netmask for the interface
+ -d: (Optional) Enable DHCP mode (cannot be used with -a and -m)
+ -v: (Optional) Enable verbose output
+ -h: (Optional) Display this help message
+
+Examples:
+  $0 -i eth0 -a 192.168.1.100 -m 255.255.255.0
+  $0 -i eth0 -d -n public_0
+EOF
+
+set -euo pipefail
+
+# --- options parse ---
+udev_rules_file="/etc/udev/rules.d/70-persistent-net.rules"
+interface=""
+address=""
+netmask=""
+new_interface_name=""
+dhcp=0
+while getopts ":i:a:m:n:dhv" opt
+do
+  case "$opt" in
+    i) interface="$OPTARG" ;;
+    a) address="$OPTARG" ;;
+    m) netmask="$OPTARG" ;;
+    n) new_interface_name="$OPTARG" ;;
+    d) dhcp=1 ;;
+    v) verbose=1 ;;
+    h) usage; exit 0 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
+  esac
+done
+
+if [[ -z "$interface" ]]
+then
+  wrong_opt "Error: parameter -i <interface> is required."
+fi
+
+if [[ ! "$interface" =~ ^[a-zA-Z0-9_-]+$ ]]
+then
+  wrong_opt "Error: interface name (${interface}) contains invalid characters"
+fi
+
+if [[ -n "$new_interface_name" && ! "$new_interface_name" =~ ^[a-zA-Z0-9_-]+$ ]]
+then
+  wrong_opt "Error: new interface name (${new_interface_name}) contains invalid characters"
+fi
+
+if [[ "$dhcp" -eq 0 && ( -z "$address" || -z "$netmask" ) ]]
+then
+  wrong_opt "Error: parameters -a <address> and -n <netmask> are required in static mode."
+fi
+
+# Validate IP address format
+if [[ "$dhcp" -eq 0 ]]
+then
+  if ! echo "$address" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
+  then
+    wrong_opt "Error: invalid IP address format"
+  fi
+
+  if ! echo "$netmask" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
+  then
+    wrong_opt "Error: invalid netmask format"
+  fi
+fi
+# --- options parse ---
+
+function get_first_non_empty_variable()
+{
+  local first_value="$1"
+  local second_value="$2"
+  if [[ -n "$first_value" ]]
+  then
+      echo "$first_value"
+  elif [[ -n "$second_value" ]]
+  then
+      echo "$second_value"
+  else
+      echo ""
+  fi
+}
+
+function clean_old_interface_config()
+{
+  if [[ "$new_interface_name" != "$interface" ]]
+  then
+    log_info "Removing old interface config /etc/network/interfaces.d/${interface}"
+    sudo rm -f /etc/network/interfaces.d/${interface}
+  fi
+}
+
+function configure_dhcp()
+{
+  local conf_interface
+  conf_interface=$(get_first_non_empty_variable "${new_interface_name}" "${interface}")
+
+  log_info "Setup ${interface}: requesting DHCP"
+  cat <<EOF | sudo tee "/etc/network/interfaces.d/${conf_interface}" > /dev/null
+# Generated with $0
+auto ${conf_interface}
+iface ${conf_interface} inet dhcp
+EOF
+  log_info "Added DHCP config /etc/network/interfaces.d/${conf_interface}"
+  clean_old_interface_config
+
+  sudo ifdown "${interface}" 2>/dev/null || true
+  sudo ifup "${interface}"
+}
+
+function configure_static()
+{
+  local conf_interface
+  conf_interface=$(get_first_non_empty_variable "${new_interface_name}" "${interface}")
+
+  log_info "Setup static ${interface}: ${address}/${netmask}"
+
+  if ! ipcalc-ng -p "$address" "$netmask" > /dev/null 2>&1
+  then
+    log_cry "Error: invalid IP address or netmask combination"
+  fi
+
+  prefix=$(ipcalc-ng -p "$address" "$netmask" | awk -F= '/PREFIX/{print $2}')
+  cat <<EOF | sudo tee "/etc/network/interfaces.d/${conf_interface}" > /dev/null
+# Generated with $0
+auto ${conf_interface}
+iface ${conf_interface} inet static
+    address ${address}
+    netmask ${netmask}
+EOF
+  log_info "Added static config /etc/network/interfaces.d/${conf_interface}"
+  clean_old_interface_config
+
+  sudo ip addr flush dev "$interface"
+  sudo ip addr add "${address}/${prefix}" dev "$interface"
+  sudo ip link set "$interface" up
+}
+
+function get_interface_mac_address()
+{
+  local mac_address
+  mac_address=$(ip link show "${interface}" 2>/dev/null | awk '/link\/ether/ {print $2}')
+
+  if [[ -z "$mac_address" ]]
+  then
+    log_cry "Error: MAC address for interface '${interface}' not found."
+  fi
+  echo "${mac_address}"
+}
+
+function add_udev_rule()
+{
+  local interface_mac
+  interface_mac=$(get_interface_mac_address)
+
+  log_info "Adding rule for interface '${interface}' (${interface_mac}) → '${new_interface_name}' to ${udev_rules_file} ..."
+
+  sudo mkdir -p "$(dirname "$udev_rules_file")"
+
+  if [[ -f "$udev_rules_file" ]]
+  then
+    sudo sed -i "/${interface_mac}/d" "$udev_rules_file"
+  fi
+  printf 'SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="%s", NAME="%s"\n' "${interface_mac}" "${new_interface_name}" | sudo tee -a "$udev_rules_file" >/dev/null
+}
+
+# --- main ---
+check_user "cephos"
+
+if ! interface_exists "${interface}"
+then
+  log_cry "Error: interface '${interface}' not found."
+fi
+
+if [[ -n "$new_interface_name" ]]
+then
+  if interface_exists "${new_interface_name}"
+  then
+    log_cry "Error: interface '${new_interface_name}' already exists."
+  fi
+  add_udev_rule
+fi
+
+if (( dhcp ))
+then
+  configure_dhcp
+else
+  configure_static
+fi
+
+if [[ -n "$new_interface_name" ]]
+then
+  log_info "Network interface '${interface}' will be available as '${new_interface_name}' after reboot."
+  ask_confirmation "Reboot required. Reboot host?"
+  log_wrn "Rebooting system..."
+  sudo reboot
+fi

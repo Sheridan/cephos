@@ -3,8 +3,11 @@
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0
-Example: $0
+CephOS MON Initialization Script
+
+Options:
+-h           Display this help message
+-v           Enable verbose output
 EOF
 
 set -euo pipefail
@@ -13,10 +16,10 @@ set -euo pipefail
 while getopts ":hv" opt
 do
   case ${opt} in
-    h) help; exit 0 ;;
+    h) usage; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -28,22 +31,22 @@ log_info "Init mon ${mon_id} with [fsid:${ceph_fsid}] and main conf file ${ceph_
 if ! sudo test -d "${mon_data_dir}"
 then
   log_info "MON not found on this host, creating new MON"
-  log_info "Подготовка карты для ${mon_id}"
+  log_info "Preparing map for ${mon_id}"
   sudo monmaptool --create --add ${mon_id} ${public_ip} --fsid ${ceph_fsid} ${ceph_conf_dir}/monmap --enable-all-features
   set_file_rights
 
-  log_info "Создание каталогов ${mon_data_dir}"
+  log_info "Creating directories ${mon_data_dir}"
   sudo mkdir -p "${mon_data_dir}"
   set_file_rights
 
-  log_info "Создание экземпляра mon ${mon_id}"
+  log_info "Creating mon instance ${mon_id}"
   sudo ceph-mon --mkfs -i "${mon_id}" \
     --monmap "${ceph_conf_dir}/monmap" \
     --keyring "${ceph_conf_dir}/ceph.mon.keyring" \
     --conf "${ceph_main_conf}"
   set_file_rights
 
-  log_info "Старт сервиса ceph-mon@${mon_id}"
+  log_info "Starting service ceph-mon@${mon_id}"
   sudo systemctl enable --now ceph-mon@${mon_id}.service
 
 else

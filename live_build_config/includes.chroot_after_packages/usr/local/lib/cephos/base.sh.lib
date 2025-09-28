@@ -6,6 +6,7 @@ clr_warn="\e[1;33m" # WARN
 clr_err="\e[1;31m"  # ERROR
 clr_verb="\e[1;36m"
 verbose=0
+build_hostname="cephos"
 
 function log_message()
 {
@@ -20,33 +21,33 @@ function log_verbose()
   local message="$1"
   if (( verbose ))
   then
-    log_message "V" "$clr_verb" "$message"
+    log_message "V" "${clr_verb}" "${message}"
   fi
 }
 
 function log_info()
 {
   local message="$1"
-  log_message "I" "$clr_info" "$message"
+  log_message "I" "${clr_info}" "${message}"
 }
 
 function log_wrn()
 {
   local message="$1"
-  log_message "W" "$clr_warn" "$message"
+  log_message "W" "${clr_warn}" "${message}"
 }
 
 function log_err()
 {
   local message="$1"
-  log_message "E" "$clr_err" "$message"
+  log_message "E" "${clr_err}" "${message}"
 }
 
 function wrong_opt()
 {
   local message="$1"
   log_err "${message}"
-  help
+  usage
   exit 1
 }
 
@@ -57,9 +58,9 @@ function log_cry()
   exit 1
 }
 
-function help()
+function usage()
 {
-  echo "$help_text"
+  echo "${help_text}"
   exit 0
 }
 
@@ -71,11 +72,21 @@ function ask_confirmation()
   while true
   do
     echo -ne "[${clr_warn}?${clr_reset}] "
-    read -r -p "$prompt_message (y/n): " user_input
-    case "$user_input" in
+    read -r -p "${prompt_message} (y/n): " user_input
+    case "${user_input}" in
       [Yy]) return 0 ;;
       [Nn]) exit 1   ;;
-          *) log_wrn "Нужно ввести 'y' или 'n'. Попробуйте ещё раз." ;;
+         *) log_wrn "Please enter 'y' or 'n'. Try again." ;;
     esac
   done
+}
+
+function check_user()
+{
+  local target_user="$1"
+  if [[ "$(id -un)" != "${target_user}" ]]
+  then
+    log_err "Must be run as user ${target_user}"
+    exit 1
+  fi
 }

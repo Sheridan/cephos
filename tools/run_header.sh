@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-function help()
+function usage()
 {
     cat <<EOF
 Options:
@@ -39,21 +39,21 @@ write_image_only=0
 while getopts ":R:P:m:p:hs" opt
 do
   case ${opt} in
-    h) help; exit 0 ;;
+    h) usage; exit 0 ;;
     s) write_image_only=1 ;;
     R) root_block_device="${OPTARG}" ;;
     P) root_persistence_block_device="${OPTARG}" ;;
     m) work_mode="${OPTARG}" ;;
     p) persistences="${OPTARG}" ;;
-   \?) echo "Ошибка: неизвестная опция -${OPTARG}"; exit 1 ;;
-    :) echo "Ошибка: опция -${OPTARG} требует аргумент"; exit 1 ;;
+   \?) echo "Error: unknown option -${OPTARG}"; exit 1 ;;
+    :) echo "Error: option -${OPTARG} requires an argument"; exit 1 ;;
   esac
 done
 
 if [[ -z "$root_block_device" ]]
 then
-  echo "Не указано устройство для / (-R)"
-  help
+  echo "No root device specified (-R)"
+  usage
   exit 1
 fi
 root_partition="${root_block_device}1"
@@ -68,8 +68,8 @@ fi
 
 if [[ -z "$work_mode" ]]
 then
-  echo "Не указан режим работы (write|update) (-m)"
-  help
+  echo "No work mode specified (write|update) (-m)"
+  usage
   exit 1
 fi
 
@@ -191,7 +191,6 @@ function purge_device()
   sleep 1
 }
 
-# Function: backup persistence partition filesystem
 function backup_root_persistence()
 {
   local mount_dir
@@ -206,7 +205,6 @@ function backup_root_persistence()
   rmdir "${mount_dir}"
 }
 
-# Function: restore persistence partition filesystem
 function restore_root_persistence()
 {
   local mount_dir
@@ -242,7 +240,7 @@ function write_cephos_to_root()
 {
   purge_device "${root_block_device}"
   echo "Writing image to block device drive ${root_block_device}..."
-  dd if="${cephos_image}" of="${root_block_device}" bs=4M status=progress oflag=sync || { echo "Ошибка записи образа"; exit 1; }
+  dd if="${cephos_image}" of="${root_block_device}" bs=4M status=progress oflag=sync || { echo "Error writing image"; exit 1; }
   sync
   partprobe "${root_block_device}" &> /dev/null
   parted -s "${root_block_device}" set 1 boot on
@@ -315,7 +313,6 @@ function make_persistences()
   fi
 }
 
-# Содержит только cephos image, без дополнительных разделов
 function block_device_is_only_cephos()
 {
   local device_path="$1"
@@ -333,21 +330,21 @@ function block_device_is_only_cephos()
 
 if is_update && is_write_image_only
 then
-  echo "Нет смысла именно в обновлении, если вы хотите просто записать образ на устройство"
-  echo "Запускайте '$0 -R ${root_block_device} -s'"
+  echo "No point in updating if you just want to write the image to the device"
+  echo "Run '$0 -R ${root_block_device} -s'"
   exit 1
 fi
 
 if is_update && block_device_is_only_cephos "${root_block_device}"
 then
-  echo "Обновлять имеет смысл только если persistence раздел на том-же устройстве"
-  echo "Запускайте '$0 -R ${root_block_device} -s'"
+  echo "Updating only makes sense if the persistence partition is on the same device"
+  echo "Run '$0 -R ${root_block_device} -s'"
   exit 1
 fi
 
 if is_update && persistences_exists
 then
-  echo "Нет смысла обновлять другие разделы при обновлении CephOS раздела. Не указывайте их в командной строке"
+  echo "No point in updating other partitions when updating the CephOS partition. Don't specify them on the command line"
   exit 1
 fi
 
