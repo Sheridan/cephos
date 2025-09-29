@@ -1,33 +1,43 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/network.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS Host Initialization Script
 
 Options:
--n <fqdn>    Specify the Fully Qualified Domain Name (FQDN) for the host
-             Format: hostname.domain.tld (e.g., ceph1.example.com)
--h           Display this help message
--v           Enable verbose output
+-n <fqdn>             Specify the Fully Qualified Domain Name (FQDN) for the host
+                      Format: hostname.domain.tld (e.g., ceph1.example.com)
+-P <public_network>   Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
+-C <cluster_network>  Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
+-p <public_ip>        Specify the public IP address for this host
+-c <cluster_ip>       Specify the cluster IP address for this host
+-h                    Display this help message
+-v                    Enable verbose output
 
 Examples:
 # Initialize host with FQDN
-$0 -n ceph-first.domain.local
-
-# Initialize host with FQDN and verbose output
-$0 -n ceph-first.domain.local -v
-
+$0 -n ceph-first.domain.local -P 10.10.0.0/24 -C 10.20.0.0/24 -p 10.10.0.100 -c 10.20.0.100
 EOF
-
 set -euo pipefail
 
 # --- options parse ---
 fqdn=""
-while getopts ":n:hv" opt
+public_network=""
+cluster_network=""
+public_ip=""
+cluster_ip=""
+while getopts ":P:C:p:c:n:hv" opt
 do
   case ${opt} in
     n) fqdn="${OPTARG}" ;;
+    P) public_network="${OPTARG}" ;;
+    C) cluster_network="${OPTARG}" ;;
+    p) public_ip="${OPTARG}" ;;
+    c) cluster_ip="${OPTARG}" ;;
     h) usage; exit 0 ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
@@ -44,12 +54,19 @@ if [[ "$fqdn" != *.* ]]
 then
   log_cry "Error: string '${fqdn}' is not a FQDN (missing domain part)"
 fi
+
+if [[ -z "$public_network" || -z "$cluster_network"  ]]
+then
+  wrong_opt "Networks not specified"
+fi
+
+if [[ -z "$public_ip" || -z "$cluster_ip"  ]]
+then
+  wrong_opt "IPs not specified"
+fi
 # --- options parse ---
-check_user "cephos"
 
-_hostname="${fqdn%%.*}"
-_domain="${fqdn#*.}"
-
+# --- functions ---
 function restart_shell()
 {
   local current_shell
@@ -58,10 +75,26 @@ function restart_shell()
   log_verbose "Reinitializing shell ${current_shell}"
   case "${current_shell}" in
     bash) exec bash ;;
-     zsh)  exec zsh ;;
-       *)    log_cry "Unknown shell: ${current_shell}. Only bash and zsh are supported. Relogin to update hostname" ;;
+     zsh) exec zsh ;;
+       *) log_cry "Unknown shell: ${current_shell}. Only bash and zsh are supported. Relogin to update hostname" ;;
   esac
 }
+# --- functions ---
+# --- main ---
+check_user "cephos"
+
+log_info "Init host ${fqdn} for ceph with public [${public_ip} : ${public_network}] and cluster [${cluster_ip} : ${cluster_network}] networks"
+
+set_cluster_environment "PUBLIC_NETWORK" "${public_network}"
+set_cluster_environment "CLUSTER_NETWORK" "${cluster_network}"
+set_node_environment "PUBLIC_IP" "${public_ip}"
+set_node_environment "CLUSTER_IP" "${cluster_ip}"
+
+_hostname="${fqdn%%.*}"
+_domain="${fqdn#*.}"
+
+make_hosts_record "${public_ip}" "${_hostname} ${fqdn}"
+make_hosts_record "${cluster_ip}" "$(hostname -s)-cluster"
 
 if [[ "$(hostname -s)" == "${build_hostname}" ]]
 then
@@ -71,5 +104,5 @@ then
   sudo hostnamectl hostname "${_hostname}"
   restart_shell
 else
-  log_info "Already initialized"
+  log_info "Hostname already applied"
 fi

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+
+read -r -d '' help_text <<EOF
+CephOS timeserver add Script
+
+Options:
+-s <host>  Specify the time server host
+-p <host>  Specify the time servers pool
+-h         Display this help message
+-v         Enable verbose output
+
+Examples:
+$0 -n 0.pool.ntp.org
+$0 -n time.domain.local -v
+EOF
+set -euo pipefail
+
+# --- options parse ---
+time_server=""
+time_pool=""
+while getopts ":s:p:hv" opt
+do
+  case ${opt} in
+    s) time_server="${OPTARG}" ;;
+    p) time_pool="${OPTARG}" ;;
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$time_server" || -z "$time_pool" ]]
+then
+  wrong_opt "Options not specified"
+fi
+# --- options parse ---
+# --- functions ---
+function append_to_chrony()
+{
+  local kind="$1"
+  local addr="$2"
+  local filename="/etc/chrony/sources.d/${addr}.sources"
+
+  log_info "Adding ${kind} to chrony in file ${filename}"
+  echo "${kind} ${addr} iburst" | sudo tee "${filename}"
+}
+# --- functions ---
+# --- main ---
+check_user "cephos"
+
+if [[ -n "$time_server" ]]
+then
+  append_to_chrony "server" "${time_server}"
+fi
+
+if [[ -n "$time_pool" ]]
+then
+  append_to_chrony "pool" "${time_pool}"
+fi
+
+manage_service_state "enable" "chrony"
+sudo timedatectl set-ntp yes

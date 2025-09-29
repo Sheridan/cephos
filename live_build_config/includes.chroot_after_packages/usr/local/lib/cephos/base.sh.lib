@@ -1,9 +1,9 @@
 #!/bin/bash
 
 clr_reset="\e[0m"
-clr_info="\e[1;32m" # INFO
-clr_warn="\e[1;33m" # WARN
-clr_err="\e[1;31m"  # ERROR
+clr_info="\e[1;32m"
+clr_warn="\e[1;33m"
+clr_err="\e[1;31m"
 clr_verb="\e[1;36m"
 verbose=0
 build_hostname="cephos"
@@ -58,6 +58,16 @@ function log_cry()
   exit 1
 }
 
+function verbose_flag()
+{
+  if (( verbose ))
+  then
+    echo "-v"
+  else
+    echo " "
+  fi
+}
+
 function usage()
 {
   echo "${help_text}"
@@ -89,4 +99,12 @@ function check_user()
     log_err "Must be run as user ${target_user}"
     exit 1
   fi
+}
+
+function manage_service_state()
+{
+  local state="$1"
+  local service="$2"
+  log_verbose "Change service '${service}' satate to '${state}'"
+  sudo systemctl ${state} --now ${service}.service
 }

@@ -1,79 +1,41 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
-. /usr/local/lib/cephos/network.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS Cluster Initialization Script
 
 Options:
--P <public_network>  Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
--C <cluster_network>  Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
--p <public_ip>        Specify the public IP address for this host
--c <cluster_ip>       Specify the cluster IP address for this host
--h                   Display this help message
--v                   Enable verbose output
-
-Examples:
-# Initialize cluster with network and IP configurations
-$0 -P 10.10.0.0/24 -C 10.20.0.0/24 -p 10.10.0.100 -c 10.20.0.100
-
+-h  Display this help message
+-v  Enable verbose output
 EOF
-
 set -euo pipefail
 
 # --- options parse ---
-public_network=""
-cluster_network=""
-public_ip=""
-cluster_ip=""
-while getopts ":P:C:p:c:hv" opt
+while getopts ":hv" opt
 do
   case ${opt} in
-    P) public_network="${OPTARG}" ;;
-    C) cluster_network="${OPTARG}" ;;
-    p) public_ip="${OPTARG}" ;;
-    c) cluster_ip="${OPTARG}" ;;
     h) usage; exit 0 ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
-
-if [[ -z "$public_network" || -z "$cluster_network"  ]]
-then
-  wrong_opt "Options not specified"
-fi
 # --- options parse ---
-
+# --- main ---
 check_user "cephos"
 
-sudo timedatectl set-ntp true
-
 ceph_fsid=$(uuidgen)
-set_environment "FSID" "${ceph_fsid}"
-
-set_environment "PUBLIC_NETWORK" "${public_network}"
-set_environment "CLUSTER_NETWORK" "${cluster_network}"
-set_environment "PUBLIC_IP" "${public_ip}"
-set_environment "CLUSTER_IP" "${cluster_ip}"
+set_cluster_environment "FSID" "${ceph_fsid}"
 
 log_info "Init cluster with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
-
-log_verbose "Creating directories"
-sudo mkdir -p ${ceph_conf_dir}
-sudo mkdir -p ${ceph_data_dir}/bootstrap-mds ${ceph_data_dir}/bootstrap-mgr ${ceph_data_dir}/bootstrap-osd ${ceph_data_dir}/bootstrap-rgw
+create_directories
 
 log_verbose "Creating keys"
-sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
 sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mgr 'allow *' --cap mds 'allow *'
 sudo ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
-sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
-sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring /var/lib/ceph/bootstrap-osd/ceph.keyring
-
-make_hosts_record "${public_ip}" "$(hostname -s)"
-make_hosts_record "${cluster_ip}" "$(hostname -s)-cluster"
 
 log_verbose "Creating configuration ${ceph_main_conf}"
 cat <<EOF | sudo tee ${ceph_main_conf}
@@ -103,7 +65,6 @@ osd_deep_scrub_randomize_ratio = 0.5
 EOF
 
 set_fs_permissions
-
-
+ceph_crash_up
 
 log_info "Basic initialization completed"

@@ -7,19 +7,18 @@ read -r -d '' help_text <<EOF
 $0 is used to configure network interfaces on CephOS systems.
 
 Options:
- -i <interface>: (Required) Specifies the network interface to configure (e.g., eth0, ens3)
- -n <new_interface_name>: (Optional) Specifies a new name for the interface that will persist across reboots
- -a <address>: (Required for static IP) The IP address to assign to the interface
- -m <netmask>: (Required for static IP) The netmask for the interface
- -d: (Optional) Enable DHCP mode (cannot be used with -a and -m)
- -v: (Optional) Enable verbose output
- -h: (Optional) Display this help message
+ -i <interface>          (Required) Specifies the network interface to configure (e.g., eth0, ens3)
+ -n <new_interface_name> (Optional) Specifies a new name for the interface that will persist across reboots
+ -a <address>            (Required for static IP) The IP address to assign to the interface
+ -m <netmask>            (Required for static IP) The netmask for the interface
+ -d                      (Optional) Enable DHCP mode (cannot be used with -a and -m)
+ -v                      (Optional) Enable verbose output
+ -h                      (Optional) Display this help message
 
 Examples:
   $0 -i eth0 -a 192.168.1.100 -m 255.255.255.0
   $0 -i eth0 -d -n public_0
 EOF
-
 set -euo pipefail
 
 # --- options parse ---
@@ -78,7 +77,7 @@ then
   fi
 fi
 # --- options parse ---
-
+# --- functions ---
 function get_first_non_empty_variable()
 {
   local first_value="$1"
@@ -176,7 +175,7 @@ function add_udev_rule()
   fi
   printf 'SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="%s", NAME="%s"\n' "${interface_mac}" "${new_interface_name}" | sudo tee -a "$udev_rules_file" >/dev/null
 }
-
+# --- functions ---
 # --- main ---
 check_user "cephos"
 

@@ -20,7 +20,7 @@ PrintMotd no
 PrintLastLog yes
 MaxStartups 2:50:10
 
-Subsystem sftp /bin/true
+Subsystem sftp /usr/lib/openssh/sftp-server
 
 Compression yes
 PermitTTY yes

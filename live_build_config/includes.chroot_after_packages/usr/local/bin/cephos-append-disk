@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
 
@@ -8,7 +10,7 @@ Usage: $0 -d <block_device>
 This script appends a block device to a Ceph cluster by creating a new OSD (Object Storage Daemon).
 
 Options:
-  -d <block_device>  Specify the block device to append (e.g., /dev/sdb)
+  -d <block_device> Specify the block device to append (e.g., /dev/sdb)
   -h                Show this help message
   -v                Enable verbose output
 
@@ -19,8 +21,8 @@ Examples:
   # Append /dev/sdc with verbose output
   $0 -d /dev/sdc -v
 EOF
-
 set -euo pipefail
+
 # --- options parse ---
 block_device=""
 while getopts ":d:hv" opt
@@ -44,7 +46,7 @@ then
   log_cry "Block device ${block_device} not exists or not a valid block device"
 fi
 # --- options parse ---
-
+# --- main ---
 check_user "cephos"
 ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 

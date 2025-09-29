@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS Cluster Status Script
 
 Options:
--h           Display this help message
--v           Enable verbose output
-
+-h  Display this help message
+-v  Enable verbose output
 EOF
-
 set -euo pipefail
 
 # --- options parse ---
@@ -19,12 +19,18 @@ do
   case ${opt} in
     h) usage; exit 0 ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Ошибка: неизвестная опция -${OPTARG}" ;;
-    :) wrong_opt "Ошибка: опция -${OPTARG} требует аргумент" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
   esac
 done
 # --- options parse ---
+# --- main ---
 check_user "cephos"
+
+log_info "Local timesync status"
+sudo chronyc sources
+sudo chronyc tracking
+sudo chronyc activity
 
 log_info "Health"
 sudo ceph health

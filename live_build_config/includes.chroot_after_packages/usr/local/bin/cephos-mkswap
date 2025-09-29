@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
 
@@ -7,8 +9,8 @@ read -r -d '' help_text <<EOF
 Usage: $0 -d <block_device>
 Example: $0 -d /dev/sdb
 EOF
-
 set -euo pipefail
+
 # --- options parse ---
 block_device=""
 while getopts ":d:hv" opt
@@ -32,9 +34,7 @@ then
   log_cry "Block device ${block_device} not exists or not a valid block device"
 fi
 # --- options parse ---
-check_user "cephos"
-ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
-
+# --- functions ---
 function format_partitions()
 {
   log_info "Creating swap on ${block_device}..."
@@ -48,7 +48,10 @@ function update_fstab()
   log_info "Adding entries to /etc/fstab..."
   echo "UUID=${uuid_swap} none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
 }
-
+# --- functions ---
+# --- main ---
+check_user "cephos"
+ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 format_partitions
 update_fstab
 sudo swapon "${block_device}"

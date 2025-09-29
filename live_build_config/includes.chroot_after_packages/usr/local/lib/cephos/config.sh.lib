@@ -1,0 +1,89 @@
+#!/bin/bash
+
+cephos_environment_location="/var/lib/cephos"
+
+function set_config_var()
+{
+  local config_file="$1"
+  local var_name="$2"
+  local new_value="$3"
+
+  if [[ ! -f "$config_file" ]]
+  then
+    sudo mkdir -p "${cephos_environment_location}"
+    sudo touch "$config_file"
+  fi
+
+  if grep -qE "^${var_name}=" "$config_file"
+  then
+    sudo sed -i "s|^${var_name}=.*|${var_name}=${new_value}|" "$config_file"
+  else
+    echo "${var_name}=${new_value}" | sudo tee -a "$config_file" > /dev/null
+  fi
+}
+
+function get_config_var()
+{
+  local env_file="${1}"
+  local var_name="${2}"
+  local default_value="${3}"
+  local line_value
+
+  if [[ ! -f "$env_file" ]]
+  then
+    echo "$default_value"
+    return 0
+  fi
+
+  line_value=$(grep -E "^${var_name}=" "$env_file" | tail -n 1 | cut -d '=' -f2-)
+  if [[ -n "$line_value" ]]
+  then
+      echo "$line_value"
+  else
+      echo "$default_value"
+  fi
+}
+
+function set_environment()
+{
+  local var_name="$1"
+  local new_value="$2"
+  local kind="$3"
+  set_config_var "${cephos_environment_location}/${kind}.conf" "${var_name}" "${new_value}"
+}
+
+function get_environment()
+{
+  local var_name="$1"
+  local default_value="$2"
+  local kind="$3"
+  get_config_var "${cephos_environment_location}/${kind}.conf" "${var_name}" "${default_value}"
+}
+
+function set_cluster_environment()
+{
+  local var_name="$1"
+  local new_value="$2"
+  set_environment "${var_name}" "${new_value}" "cluster"
+}
+
+function get_cluster_environment()
+{
+  local var_name="$1"
+  local default_value="$2"
+  get_environment "${var_name}" "${default_value}" "cluster"
+}
+
+function set_node_environment()
+{
+  local var_name="$1"
+  local new_value="$2"
+  set_environment "${var_name}" "${new_value}" "node"
+}
+
+function get_node_environment()
+{
+  local var_name="$1"
+  local default_value="$2"
+  get_environment "${var_name}" "${default_value}" "node"
+}

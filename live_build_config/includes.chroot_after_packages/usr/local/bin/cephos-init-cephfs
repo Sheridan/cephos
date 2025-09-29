@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS CephFS Initialization Script
 
 Options:
--h           Display this help message
--v           Enable verbose output
+-h  Display this help message
+-v  Enable verbose output
 EOF
-
 set -euo pipefail
 
 # --- options parse ---
@@ -23,19 +24,21 @@ do
   esac
 done
 # --- options parse ---
+# --- main ---
 check_user "cephos"
 
-log_info "Creating cephfs pools"
-sudo ceph osd pool create cephfs_metadata
-sudo ceph osd pool set    cephfs_metadata bulk false
-sudo ceph osd pool create cephfs_data
-sudo ceph osd pool set    cephfs_data     bulk true
+log_info "Creating cephfs '${cephfs_name}' pools"
+sudo ceph osd pool create ${cephfs_name}_metadata
+sudo ceph osd pool set    ${cephfs_name}_metadata bulk false
+sudo ceph osd pool create ${cephfs_name}_data
+sudo ceph osd pool set    ${cephfs_name}_data     bulk true
 
-log_info "Creating cephfs"
-sudo ceph fs new cephfs cephfs_metadata cephfs_data
-sudo mkdir -p "${mds_data_dir}"
-sudo ceph auth get-or-create mds.${mds_id} mds 'allow *' osd 'allow rwx' mon 'allow rw' | sudo tee ${mds_data_dir}/keyring > /dev/null
+log_info "Creating fs '${cephfs_name}'"
+sudo ceph fs new ${cephfs_name} ${cephfs_name}_metadata ${cephfs_name}_data
+
+log_info "Configure fs '${cephfs_name}'"
+ceph fs set ${cephfs_name} max_mds 1
+ceph fs set ${cephfs_name} standby_count_wanted 1
+ceph fs set ${cephfs_name} allow_standby_replay true
+
 set_fs_permissions
-
-log_info "Starting service ceph-mds@${mds_id}"
-sudo systemctl enable --now ceph-mds@${mds_id}.service

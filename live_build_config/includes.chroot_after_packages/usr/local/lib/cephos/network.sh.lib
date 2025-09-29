@@ -31,3 +31,35 @@ function make_hosts_record()
     log_info "[hosts] Record added: ${ip_address} <-> ${host_name}"
   fi
 }
+
+function copy_file_from_host()
+{
+  local remote_host="$1"
+  local file_path="$2"
+  local filename
+  filename=$(basename "$file_path")
+  local tmpfile="/tmp/${filename}.$$"
+
+  log_info "Taking ${remote_host}:${file_path}"
+  scp "cephos@${remote_host}:${file_path}" "${tmpfile}" || { log_cry "Can not scp ${file_path} from ${remote_host}"; }
+  log_verbose "Saving ${file_path}"
+  sudo mkdir -p "$(dirname "${file_path}")"
+  sudo mv "${tmpfile}" "${file_path}" || { log_cry "Can not move ${$tmpfile} to ${file_path}"; }
+}
+
+function copy_directory_from_host()
+{
+  local remote_host="$1"
+  local dir_path="$2"
+  local dirname
+  dirname=$(basename "$dir_path")
+  local tmpdir="/tmp/${dirname}.$$"
+
+  log_info "Taking directory ${remote_host}:${dir_path}"
+  scp -r "cephos@${remote_host}:${dir_path}" "${tmpdir}" || { log_cry "Cannot scp directory ${dir_path} from ${remote_host}"; }
+
+  log_verbose "Saving directory ${dir_path}"
+  sudo mkdir -p "${dir_path}"
+  sudo mv -f "${tmpdir}/"* "${dir_path}/" || { log_cry "Cannot move contents ${tmpdir} to ${dir_path}"; }
+  rm -rf "${tmpdir}"
+}

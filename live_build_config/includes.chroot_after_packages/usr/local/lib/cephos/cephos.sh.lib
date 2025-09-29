@@ -1,62 +1,5 @@
 #!/bin/bash
 
-. /usr/local/lib/cephos/base.sh.lib
-
-function set_config_var()
-{
-  local config_file="$1"
-  local var_name="$2"
-  local new_value="$3"
-
-  if [[ ! -f "$config_file" ]]
-  then
-    sudo touch "$config_file"
-  fi
-
-  if grep -qE "^${var_name}=" "$config_file"
-  then
-    sudo sed -i "s|^${var_name}=.*|${var_name}=${new_value}|" "$config_file"
-  else
-    echo "${var_name}=${new_value}" | sudo tee -a "$config_file" > /dev/null
-  fi
-}
-
-function read_config_var()
-{
-  local env_file="${1}"
-  local var_name="${2}"
-  local default_value="${3}"
-  local line_value
-
-  if [[ ! -f "$env_file" ]]
-  then
-    echo "$default_value"
-    return 0
-  fi
-
-  line_value=$(grep -E "^${var_name}=" "$env_file" | tail -n 1 | cut -d '=' -f2-)
-  if [[ -n "$line_value" ]]
-  then
-      echo "$line_value"
-  else
-      echo "$default_value"
-  fi
-}
-
-function set_environment()
-{
-  local var_name="$1"
-  local new_value="$2"
-  set_config_var "/etc/default/ceph" "${var_name}" "${new_value}"
-}
-
-function get_environment()
-{
-  local var_name="$1"
-  local default_value="$2"
-  read_config_var "/etc/default/ceph" "${var_name}" "${default_value}"
-}
-
 function check_hostname()
 {
   if [[ "$0" == "/usr/local/bin/cephos-init-host" ]]
@@ -92,29 +35,48 @@ function ceph_crash_up()
 {
   sudo mkdir -p /var/lib/ceph/crash/posted
   set_fs_permissions
-  sudo systemctl enable --now ceph-crash.service
+  manage_service_state "enable" "ceph-crash"
 }
 
-log_verbose "Preparing data"
-check_hostname
-ceph_conf_dir="/etc/ceph"
-ceph_data_dir="/var/lib/ceph"
-ceph_main_conf="${ceph_conf_dir}/ceph.conf"
-ceph_fsid=$(get_environment "FSID" "none")
+function create_directories()
+{
+  log_verbose "Creating directories"
+  sudo mkdir -p ${ceph_conf_dir}
+  sudo mkdir -p ${ceph_data_dir}/bootstrap-mon \
+                ${ceph_data_dir}/bootstrap-mds \
+                ${ceph_data_dir}/bootstrap-mgr \
+                ${ceph_data_dir}/bootstrap-osd \
+                ${ceph_data_dir}/bootstrap-rgw
+  set_fs_permissions
+}
 
-mon_id="$(hostname -s)"
-mgr_id="$(hostname -s)"
-mds_id="$(hostname -s)"
-mon_data_dir="${ceph_data_dir}/mon/ceph-${mon_id}"
-mgr_data_dir="${ceph_data_dir}/mgr/ceph-${mgr_id}"
-mds_data_dir="${ceph_data_dir}/mds/ceph-${mds_id}"
-osd_data_dir="${ceph_data_dir}/osd"
+function prepare_ceph_data()
+{
 
-public_network=$(get_environment "PUBLIC_NETWORK" "10.0.0.0/8")
-cluster_network=$(get_environment "CLUSTER_NETWORK" "10.0.0.0/8")
-public_ip=$(get_environment "PUBLIC_IP" "10.0.0.100")
-cluster_ip=$(get_environment "CLUSTER_IP" "10.0.0.101")
+  log_verbose "Preparing data"
+  check_hostname
+  ceph_conf_dir="/etc/ceph"
+  ceph_data_dir="/var/lib/ceph"
+  ceph_main_conf="${ceph_conf_dir}/ceph.conf"
+  ceph_fsid=$(get_cluster_environment "FSID" "none")
 
-# log_info "Main conf file: ${ceph_main_conf}"
-log_info "Ceph fsid: ${ceph_fsid}"
-log_info "Ceph id: [mon:${mon_id}], [mgr:${mgr_id}], [mds:${mds_id}]"
+  cephfs_name="storage"
+  mon_id="$(hostname -s)"
+  mgr_id="$(hostname -s)"
+  mds_id="${cephfs_name}"
+  mon_data_dir="${ceph_data_dir}/mon/ceph-${mon_id}"
+  mgr_data_dir="${ceph_data_dir}/mgr/ceph-${mgr_id}"
+  mds_data_dir="${ceph_data_dir}/mds/ceph-${mds_id}"
+  osd_data_dir="${ceph_data_dir}/osd"
+
+  public_network=$(get_cluster_environment "PUBLIC_NETWORK" "10.0.0.0/8")
+  cluster_network=$(get_cluster_environment "CLUSTER_NETWORK" "10.0.0.0/8")
+  public_ip=$(get_node_environment "PUBLIC_IP" "10.0.0.100")
+  cluster_ip=$(get_node_environment "CLUSTER_IP" "10.0.0.101")
+
+  # log_info "Main conf file: ${ceph_main_conf}"
+  log_info "Ceph fsid: ${ceph_fsid}"
+  log_info "Ceph id: [mon:${mon_id}], [mgr:${mgr_id}], [mds:${mds_id}]"
+}
+
+prepare_ceph_data

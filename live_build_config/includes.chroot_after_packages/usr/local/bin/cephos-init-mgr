@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
@@ -7,10 +9,9 @@ Usage: $0 [-hv]
 Initialize a Ceph Manager (MGR) node.
 
 Options:
-  -h        Show this help message and exit
-  -v        Enable verbose mode
+  -h  Show this help message and exit
+  -v  Enable verbose mode
 EOF
-
 set -euo pipefail
 
 # --- options parse ---
@@ -24,11 +25,11 @@ do
   esac
 done
 # --- options parse ---
+# --- main ---
 check_user "cephos"
 
 log_info "Init mgr ${mgr_id} with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
 
-# --- Check & create MON if not exists ---
 if ! sudo test -d "${mgr_data_dir}"
 then
   log_info "MGR not found on this host, creating new MGR"
@@ -41,20 +42,19 @@ then
 
   set_fs_permissions
 
-  log_info "Starting service ceph-mgr@${mgr_id}"
-  sudo systemctl enable --now ceph-mgr@${mgr_id}.service
+  manage_service_state "enable" "ceph-mgr@${mgr_id}"
   sleep 5
 
   log_info "Configuration"
   sudo ceph mgr module disable restful
-  sudo ceph mgr module enable stats
   sudo ceph mgr module enable dashboard
+  #sudo ceph mgr module enable pg_autoscaler
   sudo ceph config set mgr mgr/dashboard/server_port 8080
   sudo ceph config set mgr mgr/dashboard/ssl false
   echo 'P@ssw0rd' > /tmp/pass
   sudo ceph dashboard ac-user-create cephos -i /tmp/pass administrator
   rm -f /tmp/pass
-
+  sudo ceph config set mon mon_warn_on_insecure_global_id_reclaim_allowed false
 else
   log_verbose "MGR already exists on this host"
 fi
