@@ -63,7 +63,7 @@ function prepare_ceph_data()
   cephfs_name="storage"
   mon_id="$(hostname -s)"
   mgr_id="$(hostname -s)"
-  mds_id="${cephfs_name}"
+  mds_id="$(hostname -s)"
   mon_data_dir="${ceph_data_dir}/mon/ceph-${mon_id}"
   mgr_data_dir="${ceph_data_dir}/mgr/ceph-${mgr_id}"
   mds_data_dir="${ceph_data_dir}/mds/ceph-${mds_id}"

@@ -40,5 +40,6 @@ log_info "Configure fs '${cephfs_name}'"
 ceph fs set ${cephfs_name} max_mds 1
 ceph fs set ${cephfs_name} standby_count_wanted 1
 ceph fs set ${cephfs_name} allow_standby_replay true
+ceph fs set ${cephfs_name} refuse_standby_for_another_fs false
 
 set_fs_permissions

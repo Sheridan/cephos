@@ -51,6 +51,7 @@ cephos-init-mds -v
 ```
 ceph auth get-or-create client.cephfsuser mon 'allow r' mds 'allow r, allow rw path=/' osd 'allow rw pool=storage_data'
 ceph auth get client.cephfsuser > /etc/ceph/ceph.client.cephfsuser.keyring
+ceph auth get-key client.cephfsuser > /etc/ceph/cephfsuser.secret
 mkdir -p /mnt/cephos
-mount -t ceph 192.168.0.10,192.168.0.20,192.168.0.30:/ /mnt/cephos -o name=cephfsuser,secretfile=/etc/ceph/ceph.client.cephfsuser.keyring
+mount -t ceph 192.168.0.10,192.168.0.20,192.168.0.30:/ /mnt/cephos -o name=cephfsuser,secretfile=/etc/ceph/cephfsuser.secret
 ```
