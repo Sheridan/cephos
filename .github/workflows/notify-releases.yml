@@ -15,11 +15,7 @@ jobs:
           NAME="${{ github.event.release.name }}"
           BODY=$(echo "${{ github.event.release.body }}" | head -n 20)
 
-          MESSAGE="🚀 [New Release](${RELEASE_URL})
-          Version: *${TAG}*
-          Name: ${NAME}
-          Description:
-          ${BODY}"
+          MESSAGE="🚀 New [Release](${RELEASE_URL}). Version: *${TAG}*, name: ${NAME}\nDescription:\n\n${BODY}"
 
           curl -s -X POST \
             "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \

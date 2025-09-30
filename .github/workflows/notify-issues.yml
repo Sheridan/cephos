@@ -17,13 +17,9 @@ jobs:
 
           if [ "$ACTION" = "opened" ]
           then
-            MESSAGE="🐞 [New Issue](${ISSUE_URL})
-            Author: ${USER}
-            Title: ${TITLE}"
+            MESSAGE="🐞 New [Issue](${ISSUE_URL}) from author ${USER} with title: \`${TITLE}\`"
           else
-            MESSAGE="✅ [Issue Closed](${ISSUE_URL})
-            Closed by: ${USER}
-            Title: ${TITLE}"
+            MESSAGE="✅ [Issue](${ISSUE_URL}) closed by ${USER} (Title: \`${TITLE}\`)"
           fi
 
           curl -s -X POST \
