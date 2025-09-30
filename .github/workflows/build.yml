@@ -1,5 +1,7 @@
 name: Build CephOS installer
 
+run-name: Building CephOS installer ${{ github.ref_name }} (@${{ github.actor }})
+
 on:
   release:
     types: [created]

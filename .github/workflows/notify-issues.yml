@@ -1,5 +1,7 @@
 name: Notify on Issue
 
+run-name: Issue notify (@${{ github.actor }})
+
 on:
   issues:
     types: [opened, closed]

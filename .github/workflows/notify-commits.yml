@@ -1,5 +1,7 @@
 name: Notify on Commit
 
+run-name: Commit ${{ github.sha }} notify (@${{ github.actor }})
+
 on:
   push:
     branches:
