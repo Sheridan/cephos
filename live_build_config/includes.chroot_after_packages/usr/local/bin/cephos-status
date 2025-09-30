@@ -41,7 +41,7 @@ function show()
 # --- main ---
 check_user "cephos"
 
-show "Timesync sources" "chronyc sources" 1
+show "Timesync sources" "chronyc sources"   1
 show "Timesync tracking" "chronyc tracking" 1
 show "Timesync activity" "chronyc activity" 1
 
