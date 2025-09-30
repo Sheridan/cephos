@@ -1,0 +1,27 @@
+# Set the command-line arguments to pass to the server.
+# Due to shell escaping, to pass backslashes for regexes, you need to double
+# them (\\d for \d). If running under systemd, you need to double them again
+# (\\\\d to mean \d), and escape newlines too.
+ARGS="\
+--collector.cpu.guest \
+--collector.cpu.info \
+--collector.filesystem.fs-types-exclude='^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$' \
+--collector.stat.softirq \
+--no-collector.btrfs \
+--collector.ethtool \
+--no-collector.infiniband \
+--no-collector.mdadm \
+--collector.meminfo_numa \
+--collector.mountstats \
+--no-collector.nfs \
+--no-collector.nfsd \
+--collector.perf \
+--collector.qdisc \
+--no-collector.selinux \
+--collector.slabinfo \
+--collector.sysctl \
+--collector.tcpstat \
+--no-collector.textfile \
+--collector.zoneinfo \
+--web.listen-address=:9100 \
+"

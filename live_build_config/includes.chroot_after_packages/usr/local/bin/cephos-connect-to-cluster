@@ -115,7 +115,7 @@ spread_ssh_key "${user_home}" "${current_user}" "${cluster_node}"
 log_info "SSH key successfully copied to ${cluster_node}"
 
 create_directories
-copy_file_from_host "${cluster_node}" "${cephos_environment_location}/cluster.conf"
+copy_file_from_host "${cluster_node}" "${cephos_environment_location}/cluster.ini"
 copy_file_from_host "${cluster_node}" "${ceph_conf_dir}/ceph.conf"
 copy_file_from_host "${cluster_node}" "${ceph_conf_dir}/ceph.client.admin.keyring"
 copy_file_from_host "${cluster_node}" "${ceph_data_dir}/bootstrap-osd/ceph.keyring"
@@ -126,8 +126,9 @@ copy_directory_from_host "${cluster_node}" "/etc/chrony/sources.d"
 manage_service_state "enable" "chrony"
 sudo timedatectl set-ntp yes
 
+log_delimiter
 cephos-init-mon $(verbose_flag) -n "${cluster_node}"
+log_delimiter
 cephos-init-mgr $(verbose_flag)
-
 
 ceph_crash_up

@@ -18,7 +18,6 @@ function set_recursive_permissions()
   local target_directory="$1"
 
   log_verbose "Setting permissions for ${target_directory}"
-
   sudo chown -R ceph:ceph "${target_directory}"
   sudo find "${target_directory}" -type d -exec chmod 750 {} \;
   sudo find "${target_directory}" -type f -exec chmod 640 {} \;
@@ -52,13 +51,12 @@ function create_directories()
 
 function prepare_ceph_data()
 {
-
   log_verbose "Preparing data"
   check_hostname
   ceph_conf_dir="/etc/ceph"
   ceph_data_dir="/var/lib/ceph"
   ceph_main_conf="${ceph_conf_dir}/ceph.conf"
-  ceph_fsid=$(get_cluster_environment "FSID" "none")
+  ceph_fsid=$(get_cluster_environment "fsid" "none")
 
   cephfs_name="storage"
   mon_id="$(hostname -s)"
@@ -69,10 +67,10 @@ function prepare_ceph_data()
   mds_data_dir="${ceph_data_dir}/mds/ceph-${mds_id}"
   osd_data_dir="${ceph_data_dir}/osd"
 
-  public_network=$(get_cluster_environment "PUBLIC_NETWORK" "10.0.0.0/8")
-  cluster_network=$(get_cluster_environment "CLUSTER_NETWORK" "10.0.0.0/8")
-  public_ip=$(get_node_environment "PUBLIC_IP" "10.0.0.100")
-  cluster_ip=$(get_node_environment "CLUSTER_IP" "10.0.0.101")
+  public_network=$(get_cluster_environment "public_network" "10.0.0.0/8")
+  cluster_network=$(get_cluster_environment "cluster_network" "10.0.0.0/8")
+  public_ip=$(get_node_environment "public_ip" "10.0.0.100")
+  cluster_ip=$(get_node_environment "cluster_ip" "10.0.0.101")
 
   # log_info "Main conf file: ${ceph_main_conf}"
   log_info "Ceph fsid: ${ceph_fsid}"

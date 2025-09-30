@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+sudo cephfs-top --conffile ${ceph_main_conf} --cluster ceph --id admin

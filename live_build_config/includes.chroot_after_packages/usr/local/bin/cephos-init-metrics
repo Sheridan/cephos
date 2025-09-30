@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 [-hv]
+Initialize a CephOS metrics collectors.
+
+Options:
+  -h  Show this help message and exit
+  -v  Enable verbose mode
+EOF
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- main ---
+check_user "cephos"
+
+log_info "Ceph internal metrics port: 9283"
+sudo ceph mgr module enable prometheus
+# sudo ceph config set mgr mgr/prometheus/server_addr "::"
+# sudo ceph config set mgr mgr/prometheus/server_port 9283
+sudo systemctl restart ceph-mgr@${mgr_id}.service
+
+log_info "Node exporter metrics port: 9100"
+manage_service_state "enable" "prometheus-node-exporter"
+
+log_info "Node exporter metrics port: 9102"
+manage_service_state "enable" "telegraf"
+
+log_info "Smartctl exporter metrics port: 9104"
+manage_service_state "enable" "smartctl-exporter"

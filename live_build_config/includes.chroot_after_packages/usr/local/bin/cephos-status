@@ -24,40 +24,33 @@ do
   esac
 done
 # --- options parse ---
+# --- functions ---
+function show()
+{
+  local title="$1"
+  local cmd="$2"
+  local as_verbose="$3"
+  if (( (as_verbose && verbose) || !as_verbose ))
+  then
+    log_delimiter
+    log_info "${title} ($cmd)"
+    sudo $cmd
+  fi
+}
+# --- functions ---
 # --- main ---
 check_user "cephos"
 
-log_info "Local timesync status"
-sudo chronyc sources
-sudo chronyc tracking
-sudo chronyc activity
+show "Timesync sources" "chronyc sources" 1
+show "Timesync tracking" "chronyc tracking" 1
+show "Timesync activity" "chronyc activity" 1
 
-log_info "Health"
-sudo ceph health
-
-# log_info "Pools"
-# sudo ceph lspools
-
-log_info "Using"
-sudo ceph df
-
-log_info "OSD tree"
-sudo ceph osd tree
-
-log_info "OSD df tree"
-sudo ceph osd df tree
-
-log_info "OSD perf"
-sudo ceph osd perf
-
-log_info "Pools stats"
-sudo ceph osd pool stats
-
-log_info "PG stats"
-sudo ceph pg stat
-
-log_info "MON stats"
-sudo ceph mon stat
-
-log_info "Cluster status"
-sudo ceph -s
+show "Health"         "ceph health"         0
+show "Using"          "ceph df"             0
+show "OSD tree"       "ceph osd tree"       0
+show "OSD df tree"    "ceph osd df tree"    0
+show "OSD perf"       "ceph osd perf"       0
+show "Pools stats"    "ceph osd pool stats" 0
+show "PG stats"       "ceph pg stat"        0
+show "MON stats"      "ceph mon stat"       0
+show "Cluster status" "ceph -s"             0

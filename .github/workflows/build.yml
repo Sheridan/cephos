@@ -54,7 +54,7 @@ jobs:
             echo "Uploading ${artifact}..."
             UPLOAD_URL=$(curl -s \
               -H "Authorization: OAuth ${{ steps.get_token.outputs.token }}" \
-              "https://cloud-api.yandex.net/v1/disk/resources/upload?path=GitHub/cephos/${artifact}&overwrite=true" \
+              "https://cloud-api.yandex.net/v1/disk/resources/upload?path=GitHub/cephos/${TAG}/${artifact}&overwrite=true" \
               | jq -r '.href')
             if [ "$UPLOAD_URL" == "null" ] || [ -z "$UPLOAD_URL" ]
             then

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+systemctl disable prometheus-node-exporter.service
+systemctl disable telegraf.service
+systemctl disable smartctl-exporter.service
+
+rm -rf /var/log/telegraf /etc/init.d/telegraf
+usermod -aG ceph telegraf

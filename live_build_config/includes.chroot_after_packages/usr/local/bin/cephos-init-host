@@ -9,12 +9,15 @@ read -r -d '' help_text <<EOF
 CephOS Host Initialization Script
 
 Options:
--n <fqdn>             Specify the Fully Qualified Domain Name (FQDN) for the host
-                      Format: hostname.domain.tld (e.g., ceph1.example.com)
--P <public_network>   Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
--C <cluster_network>  Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
--p <public_ip>        Specify the public IP address for this host
--c <cluster_ip>       Specify the cluster IP address for this host
+-n <fqdn>             (Required) Specify the Fully Qualified Domain Name (FQDN) for the host
+-P <public_network>   (Required) Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
+-C <cluster_network>  (Optional) Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
+                                 Default: public network
+-p <public_ip>        (Required) Specify the public IP address for this host
+-c <cluster_ip>       (Optional) Specify the cluster IP address for this host
+                                 Default: public IP
+-z <timezone>         (Optional) Specify the host timezone
+                                 Default: Etc/UTC
 -h                    Display this help message
 -v                    Enable verbose output
 
@@ -30,7 +33,8 @@ public_network=""
 cluster_network=""
 public_ip=""
 cluster_ip=""
-while getopts ":P:C:p:c:n:hv" opt
+timezone=""
+while getopts ":z:P:C:p:c:n:hv" opt
 do
   case ${opt} in
     n) fqdn="${OPTARG}" ;;
@@ -38,6 +42,7 @@ do
     C) cluster_network="${OPTARG}" ;;
     p) public_ip="${OPTARG}" ;;
     c) cluster_ip="${OPTARG}" ;;
+    z) timezone="${OPTARG}" ;;
     h) usage; exit 0 ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
@@ -45,24 +50,34 @@ do
   esac
 done
 
-if [[ -z "$fqdn" ]]
+if [[ -z "${fqdn}" ]]
 then
-  wrong_opt "Options not specified"
+  wrong_opt "Hostname (-n) is not set"
 fi
 
-if [[ "$fqdn" != *.* ]]
+if [[ "${fqdn}" != *.* ]]
 then
   log_cry "Error: string '${fqdn}' is not a FQDN (missing domain part)"
 fi
 
-if [[ -z "$public_network" || -z "$cluster_network"  ]]
+if [[ -z "${public_network}" ]]
 then
-  wrong_opt "Networks not specified"
+  wrong_opt "Public network (-P) not specified"
 fi
 
-if [[ -z "$public_ip" || -z "$cluster_ip"  ]]
+if [[ -z "${cluster_network}"  ]]
 then
-  wrong_opt "IPs not specified"
+  cluster_network="${public_network}"
+fi
+
+if [[ -z "${public_ip}"  ]]
+then
+  wrong_opt "Public IP (-p) not specified"
+fi
+
+if [[ -z "${cluster_ip}"  ]]
+then
+  cluster_ip="${public_ip}"
 fi
 # --- options parse ---
 
@@ -79,16 +94,31 @@ function restart_shell()
        *) log_cry "Unknown shell: ${current_shell}. Only bash and zsh are supported. Relogin to update hostname" ;;
   esac
 }
+
+function set_timezone()
+{
+  if [[ -n "${timezone}"  ]]
+  then
+    if [[ ! -f "/usr/share/zoneinfo/${timezone}" ]]
+    then
+      log_cry "Error: Timezone '${timezone}' not found under /usr/share/zoneinfo"
+    fi
+    log_info "Setting timezone to ${timezone} via timedatectl..."
+    sudo timedatectl set-timezone "${timezone}"
+  fi
+}
 # --- functions ---
 # --- main ---
 check_user "cephos"
 
 log_info "Init host ${fqdn} for ceph with public [${public_ip} : ${public_network}] and cluster [${cluster_ip} : ${cluster_network}] networks"
 
-set_cluster_environment "PUBLIC_NETWORK" "${public_network}"
-set_cluster_environment "CLUSTER_NETWORK" "${cluster_network}"
-set_node_environment "PUBLIC_IP" "${public_ip}"
-set_node_environment "CLUSTER_IP" "${cluster_ip}"
+set_timezone
+
+set_cluster_environment "public_network" "${public_network}"
+set_cluster_environment "cluster_network" "${cluster_network}"
+set_node_environment "public_ip" "${public_ip}"
+set_node_environment "cluster_ip" "${cluster_ip}"
 
 _hostname="${fqdn%%.*}"
 _domain="${fqdn#*.}"

@@ -28,7 +28,7 @@ done
 check_user "cephos"
 
 ceph_fsid=$(uuidgen)
-set_cluster_environment "FSID" "${ceph_fsid}"
+set_cluster_environment "fsid" "${ceph_fsid}"
 
 log_info "Init cluster with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
 create_directories
@@ -38,33 +38,31 @@ sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.keyring -
 sudo ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 
 log_verbose "Creating configuration ${ceph_main_conf}"
-cat <<EOF | sudo tee ${ceph_main_conf}
-[global]
-fsid = ${ceph_fsid}
-mon_initial_members = $(hostname -s)
-mon_host = ${public_ip}
-
-public_network = ${public_network}
-cluster_network = ${cluster_network}
-
-auth_cluster_required = cephx
-auth_service_required = cephx
-auth_client_required = cephx
-
-osd_pool_default_size = 3
-osd_pool_default_min_size = 2
-osd_crush_chooseleaf_type = 1
-
-osd_pool_default_pg_autoscale_mode = on
-
-osd_max_backfills = 1
-osd_recovery_max_active = 1
-osd_recovery_op_priority = 3
-osd_scrub_sleep = 0.1
-osd_deep_scrub_randomize_ratio = 0.5
-EOF
+add_mon_initial_member "$(hostname -s)"
+ceph_conf_set "global" "auth_client_required" "cephx"
+ceph_conf_set "global" "auth_cluster_required" "cephx"
+ceph_conf_set "global" "auth_service_required" "cephx"
+ceph_conf_set "global" "cluster_network" "${cluster_network}"
+ceph_conf_set "global" "fsid" "${ceph_fsid}"
+ceph_conf_set "global" "mon_host" "${public_ip}"
+ceph_conf_set "global" "ms_bind_ipv4" "on"
+ceph_conf_set "global" "ms_bind_ipv6" "on"
+ceph_conf_set "global" "osd_crush_chooseleaf_type" "1"
+ceph_conf_set "global" "osd_deep_scrub_randomize_ratio" "0.5"
+ceph_conf_set "global" "osd_max_backfills" "1"
+ceph_conf_set "global" "osd_pool_default_min_size" "2"
+ceph_conf_set "global" "osd_pool_default_pg_autoscale_mode" "on"
+ceph_conf_set "global" "osd_pool_default_size" "3"
+ceph_conf_set "global" "osd_recovery_max_active" "1"
+ceph_conf_set "global" "osd_recovery_op_priority" "3"
+ceph_conf_set "global" "osd_scrub_sleep" "0.1"
+ceph_conf_set "global" "public_network" "${public_network}"
 
 set_fs_permissions
 ceph_crash_up
 
 log_info "Basic initialization completed"
+log_delimiter
+cephos-init-mon $(verbose_flag)
+log_delimiter
+cephos-init-mgr $(verbose_flag)

@@ -20,6 +20,18 @@ function get_branch_name()
   echo "${result_branch_name}"
 }
 
+function install_smartcl_exporter
+{
+  echo "Installing smartcl_exporter"
+  local sc_workdir="${tmp_dir}/smartcl_exporter"
+  local version="0.14.0"
+  mkdir -p "${sc_workdir}"
+  curl -fsSL "https://github.com/prometheus-community/smartctl_exporter/releases/download/v${version}/smartctl_exporter-${version}.linux-amd64.tar.gz" -o "${sc_workdir}/smartctl_exporter.tar.gz"
+  tar -xzf "${sc_workdir}/smartctl_exporter.tar.gz" -C "${sc_workdir}"
+  find "${sc_workdir}" -type f -name 'smartctl_exporter' -exec mv -t "${live_build_config_dir}/includes.chroot_after_packages/usr/local/bin/" {} +
+  ls -la ${live_build_config_dir}/includes.chroot_after_packages/usr/local/bin/smartctl_exporter
+}
+
 function add_repo()
 {
 	local name="$1"
@@ -58,6 +70,8 @@ function prepare_config()
 	mkdir -p "${live_build_config_dir}/archives"
 	add_repo "influxdata" "https://repos.influxdata.com/debian stable main"      "https://repos.influxdata.com/influxdata-archive_compat.key"
 	add_repo "ceph"       "https://download.ceph.com/debian-squid bookworm main" "https://download.ceph.com/keys/release.asc"
+
+  install_smartcl_exporter
 }
 
 function make_splash_image()

@@ -43,3 +43,5 @@ ceph fs set ${cephfs_name} allow_standby_replay true
 ceph fs set ${cephfs_name} refuse_standby_for_another_fs false
 
 set_fs_permissions
+
+cephos-init-mds $(verbose_flag)

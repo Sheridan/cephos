@@ -1,89 +1,176 @@
 #!/bin/bash
 
 cephos_environment_location="/var/lib/cephos"
-
-function set_config_var()
+# ---=---
+function write_to_ini()
 {
-  local config_file="$1"
-  local var_name="$2"
-  local new_value="$3"
+  local inifile="$1"
+  local section="$2"
+  local variable="$3"
+  local value="$4"
+  local options="$5"
 
-  if [[ ! -f "$config_file" ]]
-  then
-    sudo mkdir -p "${cephos_environment_location}"
-    sudo touch "$config_file"
-  fi
+  sudo mkdir -p "$(dirname $inifile)"
 
-  if grep -qE "^${var_name}=" "$config_file"
+  log_verbose "Write '${section}.${variable} = ${value}' to ${inifile}"
+  sudo crudini --set ${options} "${inifile}" "${section}" "${variable}" "${value}"
+
+  if (( $? ))
   then
-    sudo sed -i "s|^${var_name}=.*|${var_name}=${new_value}|" "$config_file"
-  else
-    echo "${var_name}=${new_value}" | sudo tee -a "$config_file" > /dev/null
+    log_cry "Can not write to ${inifile}"
   fi
 }
 
-function get_config_var()
+function read_from_ini()
 {
-  local env_file="${1}"
-  local var_name="${2}"
-  local default_value="${3}"
-  local line_value
+  local inifile="$1"
+  local section="$2"
+  local variable="$3"
+  local default="$4"
+  local value
 
-  if [[ ! -f "$env_file" ]]
-  then
-    echo "$default_value"
-    return 0
-  fi
+  log_verbose "Read '${section}.${variable}' with default '${default}' to ${inifile}"
+  value=$(sudo crudini --get "${inifile}" "${section}" "${variable}" 2>/dev/null)
 
-  line_value=$(grep -E "^${var_name}=" "$env_file" | tail -n 1 | cut -d '=' -f2-)
-  if [[ -n "$line_value" ]]
+  if [[ -n "${value}" ]]
   then
-      echo "$line_value"
+    echo "${value}"
   else
-      echo "$default_value"
+    echo "${default}"
   fi
 }
 
+function del_from_ini()
+{
+  local inifile="$1"
+  local section="$2"
+  local variable="$3"
+
+  log_verbose "Delete '${section}.${variable}' from ${inifile}"
+  sudo crudini --del "${inifile}" "${section}" "${variable}"
+}
+
+function read_list_from_ini()
+{
+  local inifile="$1"
+  local section="$2"
+  local variable="$3"
+  local default="$4"
+  local raw
+  local arr
+  raw=$(read_from_ini "${inifile}" "${section}" "${variable}" "${default}")
+  raw=$(echo "$raw" | sed 's/, */,/g')
+  IFS=',' read -r -a arr <<< "$raw"
+  echo "${arr[@]}"
+}
+
+function del_list_item_from_ini()
+{
+  local inifile="$1"
+  local section="$2"
+  local variable="$3"
+  local item_to_delete="$4"
+  local current_list
+  local filtered_list=()
+  local element
+  local new_value
+
+  current_list=$(read_list_from_ini "${inifile}" "${section}" "${variable}" "")
+
+  for element in ${current_list}
+  do
+    if [[ "${element}" != "${item_to_delete}" ]]
+    then
+      filtered_list+=("${element}")
+    fi
+  done
+
+  if [[ "${#filtered_list[@]}" -eq 0 ]]
+  then
+    log_verbose "Removing key '${section}.${variable}' entirely from ${inifile} (deleted '${item_to_delete}')"
+    del_from_ini "${inifile}" "${section}" "${variable}"
+  else
+    new_value=$(IFS=','; echo "${filtered_list[*]}")
+    log_verbose "Updating '${section}.${variable}' in ${inifile}, removing '${item_to_delete}'"
+    write_to_ini "${inifile}" "${section}" "${variable}" "${new_value}" "--list"
+  fi
+}
+
+# ---=---
 function set_environment()
 {
-  local var_name="$1"
-  local new_value="$2"
+  local variable="$1"
+  local value="$2"
   local kind="$3"
-  set_config_var "${cephos_environment_location}/${kind}.conf" "${var_name}" "${new_value}"
+  write_to_ini "${cephos_environment_location}/${kind}.ini" "${kind}" "${variable}" "${value}" ""
 }
 
 function get_environment()
 {
-  local var_name="$1"
-  local default_value="$2"
+  local variable="$1"
+  local default="$2"
   local kind="$3"
-  get_config_var "${cephos_environment_location}/${kind}.conf" "${var_name}" "${default_value}"
+  read_from_ini "${cephos_environment_location}/${kind}.ini" "${kind}" "${variable}" "${default}"
 }
-
+# ---=---
 function set_cluster_environment()
 {
-  local var_name="$1"
-  local new_value="$2"
-  set_environment "${var_name}" "${new_value}" "cluster"
+  local variable="$1"
+  local value="$2"
+  set_environment "${variable}" "${value}" "cluster"
 }
 
 function get_cluster_environment()
 {
-  local var_name="$1"
-  local default_value="$2"
-  get_environment "${var_name}" "${default_value}" "cluster"
+  local variable="$1"
+  local default="$2"
+  get_environment "${variable}" "${default}" "cluster"
 }
-
+# ---=---
 function set_node_environment()
 {
-  local var_name="$1"
-  local new_value="$2"
-  set_environment "${var_name}" "${new_value}" "node"
+  local variable="$1"
+  local value="$2"
+  set_environment "${variable}" "${value}" "node"
 }
 
 function get_node_environment()
 {
-  local var_name="$1"
-  local default_value="$2"
-  get_environment "${var_name}" "${default_value}" "node"
+  local variable="$1"
+  local default="$2"
+  get_environment "${variable}" "${default}" "node"
+}
+# ---=---
+function ceph_conf_get()
+{
+  local section="$1"
+  local variable="$2"
+  read_from_ini "${ceph_main_conf}" "${section}" "${variable}" "none"
+}
+
+function ceph_conf_set()
+{
+  local section="$1"
+  local variable="$2"
+  local value="$3"
+  write_to_ini "${ceph_main_conf}" "${section}" "${variable}" "${value}" ""
+}
+# ---=---
+function get_mon_initial_members()
+{
+  read_list_from_ini "${ceph_main_conf}" "global" "mon_initial_members" ""
+}
+
+function add_mon_initial_member()
+{
+  local member="$1"
+  log_info "Adding mon initial member ${member}"
+  write_to_ini "${ceph_main_conf}" "global" "mon_initial_members" "${member}" "--list"
+}
+
+function del_mon_initial_member()
+{
+  local member="$1"
+  log_info "Removing mon initial member ${member}"
+  del_list_item_from_ini "${ceph_main_conf}" "global" "mon_initial_members" "${member}"
 }

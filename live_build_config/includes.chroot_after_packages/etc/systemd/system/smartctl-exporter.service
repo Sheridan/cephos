@@ -1,0 +1,23 @@
+[Unit]
+Description=Smartctl exporter for disk metrics
+Documentation=https://github.com/prometheus-community/smartctl_exporter
+After=network-online.target
+
+[Service]
+Type=simple
+Restart=on-failure
+EnvironmentFile=/etc/default/smartctl-exporter
+ExecStart=/usr/local/bin/smartctl_exporter $ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+User=root
+Group=root
+PIDFile=/run/smartctl_exporter.pid
+RemainAfterExit=no
+RestartSec=100ms
+StandardError=journal
+StandardOutput=journal
+SyslogIdentifier=smartctl_exporter
+TimeoutStopSec=20s
+
+[Install]
+WantedBy=multi-user.target

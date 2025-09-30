@@ -43,6 +43,11 @@ function log_err()
   log_message "E" "${clr_err}" "${message}"
 }
 
+function log_delimiter()
+{
+  log_message "=" "${clr_verb}"  "--------==|==--------"
+}
+
 function wrong_opt()
 {
   local message="$1"
