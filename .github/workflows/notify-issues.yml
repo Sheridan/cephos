@@ -1,0 +1,33 @@
+name: Notify on Issue
+
+on:
+  issues:
+    types: [opened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send issue info to Telegram
+        run: |
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          TITLE="${{ github.event.issue.title }}"
+          USER="${{ github.event.issue.user.login }}"
+          ACTION="${{ github.event.action }}"
+
+          if [ "$ACTION" = "opened" ]
+          then
+            MESSAGE="🐞 [New Issue](${ISSUE_URL})
+            Author: ${USER}
+            Title: ${TITLE}"
+          else
+            MESSAGE="✅ [Issue Closed](${ISSUE_URL})
+            Closed by: ${USER}
+            Title: ${TITLE}"
+          fi
+
+          curl -s -X POST \
+            "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="Markdown" \
+            --data-urlencode text="$MESSAGE"
