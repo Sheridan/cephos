@@ -22,7 +22,7 @@ The script takes care of:
 
 #### Example
 ```bash
-./run_vms.sh "one:/dev/sdm,/dev/sdn;two:/dev/sdg,/dev/sdj"
+testing/quemu-start.sh "one:/dev/sdm,/dev/sdn;two:/dev/sdg,/dev/sdj"
 ```
 - VM **one** will run with `/dev/sdm` and `/dev/sdn` passed through.
 - VM **two** will run with `/dev/sdg` and `/dev/sdj`.
