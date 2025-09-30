@@ -45,7 +45,7 @@ show "Timesync sources" "chronyc sources" 1
 show "Timesync tracking" "chronyc tracking" 1
 show "Timesync activity" "chronyc activity" 1
 
-show "Health"         "ceph health"         0
+show "Health"         "ceph health detail"  0
 show "Using"          "ceph df"             0
 show "OSD tree"       "ceph osd tree"       0
 show "OSD df tree"    "ceph osd df tree"    0
