@@ -25,7 +25,7 @@ The script supports two working modes:
 ## Examples
 1. Write image to a device and create a persistence partition on the same device: `./cephos_installer.run -R /dev/sdi`
 1. Write image to a device and create a persistence partition on a different device:`./cephos_installer.run -R /dev/sdi -P /dev/sdj`
-1. Write image to a device, create persistence on another device, and map additional directories: `bash ./cephos_installer.run -R /dev/sdi -P /dev/sdj -p "/dev/sdm:/var/log;/dev/sdn:/var/cache"`
+1. Write image to a device, create persistence on another device, and map additional directories: `./cephos_installer.run -R /dev/sdi -P /dev/sdj -p "/dev/sdm:/var/log;/dev/sdn:/var/cache"`
 1. Update image while keeping persistence on the same device: ` ./cephos_installer.run -m update -R /dev/sdi`
 1. Write only the CephOS image (no persistence): `./cephos_installer.run -s -R /dev/sdi`
 
