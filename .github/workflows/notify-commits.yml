@@ -12,16 +12,7 @@ jobs:
       - name: Send commit info to Telegram
         run: |
           COMMIT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
-          MESSAGE=$(cat <<EOF
-📝 [New Commit](${COMMIT_URL})
-Branch: \`${GITHUB_REF_NAME}\`
-Author: ${GITHUB_ACTOR}
-Message:
-```
-${{ github.event.head_commit.message }}
-```
-EOF
-          )
+          MESSAGE="📝 [New Commit](${COMMIT_URL})\nBranch: \`${GITHUB_REF_NAME}\`\nAuthor: ${GITHUB_ACTOR}\nMessage:\n```\n${{ github.event.head_commit.message }}\n```"
 
           curl -s -X POST \
             "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
