@@ -1,5 +1,6 @@
 crudini
 debianutils
+gdisk
 git
 htop
 iotop
@@ -16,4 +17,5 @@ strace
 sysstat
 thefuck
 tmux
+tree
 vim

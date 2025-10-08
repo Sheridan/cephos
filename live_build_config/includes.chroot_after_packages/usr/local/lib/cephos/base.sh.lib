@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 clr_reset="\e[0m"
 clr_info="\e[1;32m"
@@ -112,4 +112,41 @@ function manage_service_state()
   local service="$2"
   log_verbose "Change service '${service}' satate to '${state}'"
   sudo systemctl ${state} --now ${service}.service
+}
+
+function ensure_symlink_correct()
+{
+  local target_dir="$1"
+  local symlink_path="$2"
+  local current_target=""
+
+  if [[ ! -d "${target_dir}" ]]
+  then
+    log_cry "Directory '${target_dir}' does not exist"
+  fi
+
+  if [[ -L "${symlink_path}" ]]
+  then
+    local resolved_target
+
+    current_target="$(readlink -f "${symlink_path}")"
+    resolved_target="$(readlink -f "${target_dir}")"
+
+    if [[ "${current_target}" == "${resolved_target}" ]]
+    then
+      log_verbose "Symlink '${symlink_path}' -> '${current_target}' exists"
+      return 0
+    else
+      log_wrn "Symlink '${symlink_path}' is targeting '${current_target}', recreating..."
+      sudo rm -f "${symlink_path}" || { log_cry "Cannot delete current symlink '${symlink_path}'"; }
+    fi
+  elif [[ -e "${symlink_path}" ]]
+  then
+    log_wrn "'${symlink_path}' exists, but is not a symlink. Remake..."
+    sudo rm -rf "${symlink_path}" || { log_cry "Cannot delete '${symlink_path}'"; }
+  else
+    log_verbose "'${symlink_path}' does not exist, let's create it"
+  fi
+
+  sudo ln -s "${target_dir}" "${symlink_path}" || { log_cry "Cannot create symlink '${symlink_path}'."; }
 }

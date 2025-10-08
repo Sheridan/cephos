@@ -38,7 +38,7 @@ then
   sudo mkdir -p "${mgr_data_dir}"
 
   log_info "Creating keys"
-  sudo ceph auth get-or-create mgr.${mgr_id} mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o ${mgr_data_dir}/keyring
+  ${sudo_ceph} ceph auth get-or-create mgr.${mgr_id} mon 'allow profile mgr' osd 'allow *' mds 'allow *' -o ${mgr_data_dir}/keyring
 
   set_fs_permissions
 
@@ -46,15 +46,18 @@ then
   sleep 5
 
   log_info "Configuration"
-  sudo ceph mgr module enable dashboard
-  sudo ceph mgr module enable stats
-  sudo ceph config set mgr mgr/dashboard/server_port 8080
-  sudo ceph config set mgr mgr/dashboard/ssl false
-  echo 'P@ssw0rd' > /tmp/pass
-  sudo ceph dashboard ac-user-create cephos -i /tmp/pass administrator
-  rm -f /tmp/pass
-  sudo ceph config set mon mon_warn_on_insecure_global_id_reclaim_allowed false
-  # sudo ceph restful create-self-signed-cert
+  ${sudo_ceph} ceph mgr module enable dashboard
+  ${sudo_ceph} ceph mgr module enable stats
+  ${sudo_ceph} ceph config set mgr mgr/dashboard/server_port 8080
+  ${sudo_ceph} ceph config set mgr mgr/dashboard/ssl false
+  ${sudo_ceph} ceph config set mon mon_warn_on_insecure_global_id_reclaim_allowed false
+  # ${sudo_ceph} ceph restful create-self-signed-cert
+
+  if ! dashboard_user_exists "cephos"
+  then
+    log_info "Creating user 'cephos' with password 'P@ssw0rd'"
+    cephos-dashboard-user $(verbose_flag) -p 'P@ssw0rd'
+  fi
 else
   log_verbose "MGR already exists on this host"
 fi

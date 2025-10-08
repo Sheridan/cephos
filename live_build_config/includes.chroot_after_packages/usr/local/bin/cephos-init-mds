@@ -38,8 +38,8 @@ then
   sudo mkdir -p "${mds_data_dir}"
 
   log_info "Creating keys"
-  sudo ceph auth get-or-create mds.${mds_id} mon 'allow profile mds' mgr 'allow profile mds' osd 'allow rwx' mds 'allow *' -o ${mds_data_dir}/keyring
-  # sudo ceph auth get-or-create client.mds.${mds_id} mon 'allow rw' osd 'allow rwx' mds 'allow *' -o ${ceph_conf_dir}/client.mds.${mds_id}.keyring
+  ${sudo_ceph} ceph auth get-or-create mds.${mds_id} mon 'allow profile mds' mgr 'allow profile mds' osd 'allow rwx' mds 'allow *' -o ${mds_data_dir}/keyring
+  # ${sudo_ceph} ceph auth get-or-create client.mds.${mds_id} mon 'allow rw' osd 'allow rwx' mds 'allow *' -o ${ceph_conf_dir}/client.mds.${mds_id}.keyring
 
   set_fs_permissions
 

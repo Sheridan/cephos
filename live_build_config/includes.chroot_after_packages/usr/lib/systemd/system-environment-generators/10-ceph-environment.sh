@@ -4,4 +4,9 @@
 . /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
-${sudo_ceph} cephfs-top --conffile ${ceph_main_conf} --cluster ceph --id admin
+function apply_environment()
+{
+  echo "CLUSTER=ceph"
+  echo "CEPH_CLUSTER=ceph"
+  echo "CEPH_CONF='${ceph_main_conf}'"
+}

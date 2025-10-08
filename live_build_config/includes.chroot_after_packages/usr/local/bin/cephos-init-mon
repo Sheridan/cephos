@@ -41,16 +41,16 @@ then
   if [[ -z "${cluster_node}" ]]
   then
     log_verbose "Creating keys for mon"
-    sudo ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
-    sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring ${ceph_conf_dir}/ceph.client.admin.keyring
-    sudo ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring
+    ${sudo_ceph} ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
+    ${sudo_ceph} ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring ${ceph_conf_dir}/ceph.client.admin.keyring
+    ${sudo_ceph} ceph-authtool ${ceph_conf_dir}/ceph.mon.keyring --import-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring
     log_info "Preparing map for ${mon_id}"
-    sudo monmaptool --create --add ${mon_id} ${public_ip} --fsid ${ceph_fsid} ${ceph_data_dir}/bootstrap-mon/monmap --enable-all-features
+    ${sudo_ceph} monmaptool --create --add ${mon_id} ${public_ip} --fsid ${ceph_fsid} ${ceph_data_dir}/bootstrap-mon/monmap --enable-all-features
   else
     log_info "Taking key from ${cluster_node} for ${mon_id}"
-    sudo ceph auth get mon. -o ${ceph_conf_dir}/ceph.mon.keyring
+    ${sudo_ceph} ceph auth get mon. -o ${ceph_conf_dir}/ceph.mon.keyring
     log_info "Taking map from ${cluster_node} for ${mon_id}"
-    sudo ceph mon getmap -o "${ceph_data_dir}/bootstrap-mon/monmap"
+    ${sudo_ceph} ceph mon getmap -o "${ceph_data_dir}/bootstrap-mon/monmap"
   fi
   set_fs_permissions
 
@@ -59,7 +59,7 @@ then
   set_fs_permissions
 
   log_info "Creating mon instance ${mon_id}"
-  sudo ceph-mon \
+  ${sudo_ceph} ceph-mon \
     --mkfs \
     -i "${mon_id}" \
     --monmap "${ceph_data_dir}/bootstrap-mon/monmap" \

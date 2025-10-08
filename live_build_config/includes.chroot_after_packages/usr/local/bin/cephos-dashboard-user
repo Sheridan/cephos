@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/blockdev.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -u <username> -p <password> -r <role>
+This script manage MGR dashboard users
+
+Options:
+  -u <user>     Specify the username (default: ${user})
+  -p <password> Specify the password
+  -r <role>     Specify the role (default: ${role})
+  -h            Show this help message
+  -v            Enable verbose output
+EOF
+set -euo pipefail
+
+# --- options parse ---
+pass=""
+user="cephos"
+role="administrator"
+while getopts ":u:p:r:hv" opt
+do
+  case ${opt} in
+    u) user="${OPTARG}" ;;
+    p) pass="${OPTARG}" ;;
+    r) role="${OPTARG}" ;;
+    h) echo "${help_text}"; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$pass" ]]
+then
+  wrong_opt "Password not specified"
+fi
+# --- options parse ---
+# --- functions ---
+function manage_ceph_dashboard_user()
+{
+  local tempfile
+
+  tempfile=$(mktemp -u)
+  echo "${pass}" > "${tempfile}"
+  if dashboard_user_exists "$user"
+  then
+    log_verbose "User '${user}' exists. Changing password..."
+    ${sudo_ceph} ceph dashboard ac-user-set-password "${user}" -i "${tempfile}"
+    if [[ $? -eq 0 ]]
+    then
+      log_verbose "Password successfully changed."
+    else
+      rm -f "${tempfile}"
+      log_cry "Error changing password!"
+    fi
+  else
+    log_wrn "User '${user}' not found. Creating..."
+    ${sudo_ceph} ceph dashboard ac-user-create "${user}" -i "${tempfile}" "${role}"
+    if [[ $? -eq 0 ]]
+    then
+      log_verbose "User '${user}' successfully created with role '${role}'."
+    else
+      rm -f "${tempfile}"
+      log_cry "Error creating user!"
+    fi
+  fi
+  rm -f "${tempfile}"
+}
+# --- functions ---
+# --- main ---
+check_user "cephos"
+log_info "Changing password for ${user}:${role}"
+
+manage_ceph_dashboard_user

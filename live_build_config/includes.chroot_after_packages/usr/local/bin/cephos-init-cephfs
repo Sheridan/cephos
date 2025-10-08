@@ -28,19 +28,19 @@ done
 check_user "cephos"
 
 log_info "Creating cephfs '${cephfs_name}' pools"
-sudo ceph osd pool create ${cephfs_name}_metadata
-sudo ceph osd pool set    ${cephfs_name}_metadata bulk false
-sudo ceph osd pool create ${cephfs_name}_data
-sudo ceph osd pool set    ${cephfs_name}_data     bulk true
+${sudo_ceph} ceph osd pool create ${cephfs_name}_metadata
+${sudo_ceph} ceph osd pool set    ${cephfs_name}_metadata bulk false
+${sudo_ceph} ceph osd pool create ${cephfs_name}_data
+${sudo_ceph} ceph osd pool set    ${cephfs_name}_data     bulk true
 
 log_info "Creating fs '${cephfs_name}'"
-sudo ceph fs new ${cephfs_name} ${cephfs_name}_metadata ${cephfs_name}_data
+${sudo_ceph} ceph fs new ${cephfs_name} ${cephfs_name}_metadata ${cephfs_name}_data
 
 log_info "Configure fs '${cephfs_name}'"
-ceph fs set ${cephfs_name} max_mds 1
-ceph fs set ${cephfs_name} standby_count_wanted 1
-ceph fs set ${cephfs_name} allow_standby_replay true
-ceph fs set ${cephfs_name} refuse_standby_for_another_fs false
+${sudo_ceph} ceph fs set ${cephfs_name} max_mds 1
+${sudo_ceph} ceph fs set ${cephfs_name} standby_count_wanted 1
+${sudo_ceph} ceph fs set ${cephfs_name} allow_standby_replay true
+${sudo_ceph} ceph fs set ${cephfs_name} refuse_standby_for_another_fs false
 
 set_fs_permissions
 

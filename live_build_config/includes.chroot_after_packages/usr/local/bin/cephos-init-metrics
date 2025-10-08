@@ -28,17 +28,20 @@ done
 # --- main ---
 check_user "cephos"
 
-log_info "Ceph internal metrics port: 9283"
-sudo ceph mgr module enable prometheus
-# sudo ceph config set mgr mgr/prometheus/server_addr "::"
-# sudo ceph config set mgr mgr/prometheus/server_port 9283
-sudo systemctl restart ceph-mgr@${mgr_id}.service
-
 log_info "Node exporter metrics port: 9100"
 manage_service_state "enable" "prometheus-node-exporter"
 
-log_info "Node exporter metrics port: 9102"
+log_info "Telegraf port: 9102"
 manage_service_state "enable" "telegraf"
 
 log_info "Smartctl exporter metrics port: 9104"
 manage_service_state "enable" "smartctl-exporter"
+
+log_info "Ceph exporter port: 9106"
+manage_service_state "enable" "ceph-exporter"
+
+log_info "Ceph internal metrics port: 9108"
+${sudo_ceph} ceph mgr module enable prometheus
+${sudo_ceph} ceph config set mgr mgr/prometheus/server_addr "::"
+${sudo_ceph} ceph config set mgr mgr/prometheus/server_port 9108
+sudo systemctl restart ceph-mgr@${mgr_id}.service

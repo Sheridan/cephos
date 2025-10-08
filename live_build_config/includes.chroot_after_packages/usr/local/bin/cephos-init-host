@@ -84,14 +84,16 @@ fi
 # --- functions ---
 function restart_shell()
 {
-  local current_shell
-  current_shell=$(basename "${SHELL}")
+  local current_shell executable_name
+  current_shell=$(ps -p $$ -o comm=)
+  executable_name=$(basename "${current_shell}")
 
-  log_verbose "Reinitializing shell ${current_shell}"
-  case "${current_shell}" in
-    bash) exec bash ;;
-     zsh) exec zsh ;;
-       *) log_cry "Unknown shell: ${current_shell}. Only bash and zsh are supported. Relogin to update hostname" ;;
+  log_verbose "Reinitializing current shell: ${executable_name}"
+
+  case "${executable_name}" in
+    bash) source ~/.bashrc ;;
+     zsh) source ~/.zshrc ;;
+       *) log_cry "Unknown shell: ${executable_name}" ;;
   esac
 }
 

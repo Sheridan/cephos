@@ -115,7 +115,7 @@ spread_ssh_key "${user_home}" "${current_user}" "${cluster_node}"
 log_info "SSH key successfully copied to ${cluster_node}"
 
 create_directories
-copy_file_from_host "${cluster_node}" "${cephos_environment_location}/cluster.ini"
+copy_file_from_host "${cluster_node}" "${cephos_conf}/cluster.ini"
 copy_file_from_host "${cluster_node}" "${ceph_conf_dir}/ceph.conf"
 copy_file_from_host "${cluster_node}" "${ceph_conf_dir}/ceph.client.admin.keyring"
 copy_file_from_host "${cluster_node}" "${ceph_data_dir}/bootstrap-osd/ceph.keyring"

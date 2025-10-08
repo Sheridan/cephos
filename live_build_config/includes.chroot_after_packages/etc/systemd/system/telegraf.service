@@ -8,12 +8,15 @@ Wants=network-online.target
 Type=notify
 EnvironmentFile=-/etc/default/telegraf
 User=telegraf
-ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf.conf -config-directory /etc/telegraf/telegraf.d $TELEGRAF_OPTS
+ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf.conf -config-directory /etc/telegraf/telegraf.d $ARGS
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartForceExitStatus=SIGPIPE
 KillMode=control-group
 LimitMEMLOCK=8M:8M
+StandardError=journal
+StandardOutput=journal
+SyslogIdentifier=telegraf
 
 [Install]
 WantedBy=multi-user.target

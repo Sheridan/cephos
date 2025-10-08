@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function check_hostname()
 {
@@ -32,7 +32,7 @@ function set_fs_permissions()
 
 function ceph_crash_up()
 {
-  sudo mkdir -p /var/lib/ceph/crash/posted
+  sudo mkdir -p "${ceph_data_dir}/crash/posted"
   set_fs_permissions
   manage_service_state "enable" "ceph-crash"
 }
@@ -46,15 +46,29 @@ function create_directories()
                 ${ceph_data_dir}/bootstrap-mgr \
                 ${ceph_data_dir}/bootstrap-osd \
                 ${ceph_data_dir}/bootstrap-rgw
+
+  ensure_symlink_correct "${ceph_conf_dir}" "/etc/ceph"
+  ensure_symlink_correct "${ceph_data_dir}" "/var/lib/ceph"
+
   set_fs_permissions
+}
+
+function dashboard_user_exists()
+{
+  local user="$1"
+  ${sudo_ceph} ceph dashboard ac-user-show "$user" &>/dev/null
 }
 
 function prepare_ceph_data()
 {
   log_verbose "Preparing data"
   check_hostname
-  ceph_conf_dir="/etc/ceph"
-  ceph_data_dir="/var/lib/ceph"
+  cephos_root="/cephos"
+  cephos_conf="${cephos_root}/cephos"
+
+  ceph_root="${cephos_root}/ceph"
+  ceph_conf_dir="${ceph_root}/conf"
+  ceph_data_dir="${ceph_root}/data"
   ceph_main_conf="${ceph_conf_dir}/ceph.conf"
   ceph_fsid=$(get_cluster_environment "fsid" "none")
 
@@ -71,6 +85,12 @@ function prepare_ceph_data()
   cluster_network=$(get_cluster_environment "cluster_network" "10.0.0.0/8")
   public_ip=$(get_node_environment "public_ip" "10.0.0.100")
   cluster_ip=$(get_node_environment "cluster_ip" "10.0.0.101")
+
+  export CLUSTER=ceph
+  export CEPH_CLUSTER=ceph
+  export CEPH_CONF="${ceph_main_conf}"
+
+  sudo_ceph="sudo --preserve-env"
 
   # log_info "Main conf file: ${ceph_main_conf}"
   log_info "Ceph fsid: ${ceph_fsid}"

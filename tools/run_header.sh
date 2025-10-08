@@ -12,7 +12,7 @@ Options:
   -R: root block device
   -P: root persistence block device
       default: second partition on root block device
-  -p: other persistence block devices in format "/dev/sdX:/var/log;/dev/sdY:/var/lib/ceph"
+  -p: other persistence block devices in format "/dev/sdX:/var/log;/dev/sdY:/cephos"
   -s: only write CephOS image to block device
 Examples:
   Write image to device and create persistence partition at same device

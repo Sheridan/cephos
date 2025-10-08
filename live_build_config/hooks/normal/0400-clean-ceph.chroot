@@ -7,7 +7,12 @@ do
   systemctl disable $unit || true
 done
 
-for dr in "/etc/ceph" "/var/lib/ceph" "/var/log/ceph" "/var/run/ceph"
+for dr in "/etc/ceph" "/var/lib/ceph"
+do
+  rm -rf ${dr}
+done
+
+for dr in "/var/log/ceph" "/var/run/ceph"
 do
   rm -rf ${dr}/*
 done

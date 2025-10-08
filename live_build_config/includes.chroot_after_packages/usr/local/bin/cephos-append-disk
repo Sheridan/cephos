@@ -59,7 +59,7 @@ if [[ ! -f "${ceph_conf_dir}/ceph.client.bootstrap-osd.keyring" ]]
 then
   sudo ln -s ${ceph_data_dir}/bootstrap-osd/ceph.keyring ${ceph_conf_dir}/ceph.client.bootstrap-osd.keyring
 fi
-sudo ceph-volume \
+${sudo_ceph} ceph-volume \
     lvm create \
   --data "${block_device}" \
   --objectstore bluestore

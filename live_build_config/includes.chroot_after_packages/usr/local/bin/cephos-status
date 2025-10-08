@@ -34,7 +34,7 @@ function show()
   then
     log_delimiter
     log_info "${title} ($cmd)"
-    sudo $cmd
+    ${sudo_ceph} $cmd
   fi
 }
 # --- functions ---

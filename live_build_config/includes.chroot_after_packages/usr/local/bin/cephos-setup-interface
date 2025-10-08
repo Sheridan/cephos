@@ -203,7 +203,7 @@ fi
 if [[ -n "$new_interface_name" ]]
 then
   log_info "Network interface '${interface}' will be available as '${new_interface_name}' after reboot."
-  ask_confirmation "Reboot required. Reboot host?"
+  ask_confirmation "Reboot required. Reboot now?"
   log_wrn "Rebooting system..."
   sudo reboot
 fi
