@@ -7,7 +7,7 @@
 
 read -r -d '' help_text <<EOF
 Usage: $0 -u <username> -p <password> -r <role>
-This script manage MGR dashboard users
+This script manages MGR dashboard users
 
 Options:
   -u <user>     Specify the username (default: ${user})

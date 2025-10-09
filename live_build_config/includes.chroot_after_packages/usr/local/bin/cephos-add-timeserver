@@ -3,7 +3,7 @@
 . /usr/local/lib/cephos/base.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS timeserver add Script
+CephOS Time Server Add Script
 
 Options:
 -s <host>  Specify the time server host
@@ -12,8 +12,8 @@ Options:
 -v         Enable verbose output
 
 Examples:
-$0 -n 0.pool.ntp.org
-$0 -n time.domain.local -v
+$0 -p 0.pool.ntp.org
+$0 -s time.domain.local -v
 EOF
 set -euo pipefail
 

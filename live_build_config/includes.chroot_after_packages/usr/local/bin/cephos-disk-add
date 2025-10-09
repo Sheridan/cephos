@@ -43,7 +43,7 @@ fi
 
 if [ ! -b "$block_device" ]
 then
-  log_cry "Block device ${block_device} not exists or not a valid block device"
+  log_cry "Block device ${block_device} does not exist or is not a valid block device"
 fi
 # --- options parse ---
 # --- main ---
@@ -51,12 +51,12 @@ check_user "cephos"
 
 if disk_already_in_ceph "${block_device}"
 then
-  log_cry "Block device ${block_device} already use in ceph"
+  log_cry "Block device ${block_device} is already in use by Ceph"
 fi
 
 ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 
-log_info "Appending disk ${block_device} to mon ${mon_id}"
+log_info "Appending disk ${block_device} to MON ${mon_id}"
 
 purge_device "${block_device}"
 

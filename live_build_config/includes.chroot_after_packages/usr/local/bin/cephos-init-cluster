@@ -30,7 +30,7 @@ check_user "cephos"
 ceph_fsid=$(uuidgen)
 set_cluster_environment "fsid" "${ceph_fsid}"
 
-log_info "Init cluster with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
+log_info "Initializing cluster with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
 create_directories
 
 log_verbose "Creating keys"

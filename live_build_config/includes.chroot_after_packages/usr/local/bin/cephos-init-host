@@ -113,7 +113,7 @@ function set_timezone()
 # --- main ---
 check_user "cephos"
 
-log_info "Init host ${fqdn} for ceph with public [${public_ip} : ${public_network}] and cluster [${cluster_ip} : ${cluster_network}] networks"
+log_info "Initializing host ${fqdn} for Ceph with public [${public_ip} : ${public_network}] and cluster [${cluster_ip} : ${cluster_network}] networks"
 
 set_timezone
 

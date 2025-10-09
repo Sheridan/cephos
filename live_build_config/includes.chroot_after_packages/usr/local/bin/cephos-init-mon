@@ -8,9 +8,9 @@ read -r -d '' help_text <<EOF
 CephOS MON Initialization Script
 
 Options:
--n  Cluster node when connect to cluster
-    If unset - generating new monmap
-    Do not use by hand (used internally from cephos-connect-to-cluster)
+-n  Cluster node when connecting to cluster
+     If unset - generates new monmap
+     Do not use manually (used internally from cephos-connect-to-cluster)
 -h  Display this help message
 -v  Enable verbose output
 EOF
@@ -32,7 +32,7 @@ done
 # --- main ---
 check_user "cephos"
 
-log_info "Init mon ${mon_id} with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
+log_info "Initializing MON ${mon_id} with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
 
 # --- Check & create MON if not exists ---
 if ! sudo test -d "${mon_data_dir}"

@@ -15,15 +15,15 @@ Options:
 -v                   Enable verbose output
 
 Examples:
-# Connetc to cluster
-$0 -n 10.10.0.100 -p 10.10.0.101 -c 10.20.0.101
+# Connect to cluster
+$0 -n 10.10.0.100
 EOF
 set -euo pipefail
 
 # --- options parse ---
 current_user="cephos"
 cluster_node=""
-while getopts ":p:c:n:hv" opt
+while getopts ":n:hv" opt
 do
   case ${opt} in
     n) cluster_node="${OPTARG}" ;;

@@ -28,11 +28,11 @@ done
 # --- main ---
 check_user "cephos"
 
-log_info "Init mds ${mds_id} with [fsid:${ceph_fsid}] and main conf file ${ceph_main_conf}"
+log_info "Initializing MDS ${mds_id} with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
 
 if ! sudo test -d "${mds_data_dir}"
 then
-  log_info "MDS not found on this host, creating new MDS with id ${mds_id}"
+  log_info "MDS not found on this host, creating new MDS with ID ${mds_id}"
 
   log_info "Creating directories ${mds_data_dir}"
   sudo mkdir -p "${mds_data_dir}"

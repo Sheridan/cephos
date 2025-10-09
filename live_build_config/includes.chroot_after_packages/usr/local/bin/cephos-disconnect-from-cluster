@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/network.sh.lib
+. /usr/local/lib/cephos/ssh.sh.lib
+
+read -r -d '' help_text <<EOF
+CephOS Cluster Disconnection Script
+
+Options:
+-h: Display this help message
+-v: Enable verbose output
+EOF
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+# --- options parse ---
+# --- functions ---
+function get_local_mds_gid()
+{
+  ${sudo_ceph} ceph fs dump -f json | jq "[.filesystems[].mdsmap.info[], .standbys[]] | flatten | map(select(.name==\"${mds_id}\")) | .[].gid"
+}
+# --- functions ---
+# --- main ---
+check_user "cephos"
+ask_confirmation "This operation will remove all local disks from the cluster and destroy all data on disks. Finally, it will remove this node from the cluster. Continue?"
+
+while read -r block_device
+do
+  echo "y" | cephos-disk-remove $(verbose_flag) -d "${block_device}"
+done < <(get_local_osd_disks)
+
+log_info "Removing mds '${mds_id}'"
+mds_gid="$(get_local_mds_gid)"
+manage_service_state "disable" "ceph-mds@${mds_id}"
+${sudo_ceph} ceph mds fail "${mds_gid}" || true
+${sudo_ceph} ceph mds rm   "${mds_gid}" || true
+
+log_info "Removing mgr '${mgr_id}'"
+manage_service_state "disable" "ceph-mgr@${mgr_id}"
+${sudo_ceph} ceph mgr fail "$mgr_id" || true
+
+log_info "Removing mon '${mon_id}'"
+manage_service_state "disable" "ceph-mon@${mon_id}"
+${sudo_ceph} ceph mon remove "$mon_id" || true
+
+log_info "Stopping and disabling any Ceph services"
+sudo systemctl stop 'ceph-*.service' || true
+sudo systemctl disable 'ceph-*.service' || true
+
+log_info "Removing any Ceph data"
+sudo rm -rf ${ceph_conf_dir}/*
+sudo rm -rf ${ceph_data_dir}/*
+sudo rm -rf ${cephos_conf}/*
+
+log_info "Stopping and disabling any monitoring services"
+manage_service_state "disable" "prometheus-node-exporter"
+manage_service_state "disable" "telegraf"
+manage_service_state "disable" "smartctl-exporter"
+manage_service_state "disable" "ceph-exporter"

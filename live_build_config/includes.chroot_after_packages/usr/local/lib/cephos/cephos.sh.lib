@@ -69,6 +69,11 @@ function get_ceph_hosts()
   | sort -u
 }
 
+function get_local_osd_disks()
+{
+  ${sudo_ceph} ceph-volume lvm list | grep devices | awk '{print $2}'
+}
+
 function get_cluster_health_status()
 {
   ${sudo_ceph} ceph -s -f json | jq -r '.health.status'
