@@ -59,6 +59,16 @@ function dashboard_user_exists()
   ${sudo_ceph} ceph dashboard ac-user-show "$user" &>/dev/null
 }
 
+function get_ceph_hosts()
+{
+  ceph osd metadata -f json \
+  | jq -r '.[] | {host: .hostname, front: .front_addr, back: .back_addr}
+            | [.host, (.front | capture("v2:(?<ip>[^:]+)") .ip // "-"),
+                      (.back  | capture("v2:(?<ip>[^:]+)") .ip // "-")]
+            | @tsv' \
+  | sort -u
+}
+
 function prepare_ceph_data()
 {
   log_verbose "Preparing data"

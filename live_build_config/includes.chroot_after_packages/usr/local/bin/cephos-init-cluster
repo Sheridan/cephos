@@ -38,25 +38,31 @@ ${sudo_ceph} ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.k
 ${sudo_ceph} ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 
 log_verbose "Creating configuration ${ceph_main_conf}"
-add_mon_initial_member "$(hostname -s)"
-ceph_conf_set "global" "auth_client_required" "cephx"
+
+ceph_conf_add_to_list "mon_initial_members" "$(hostname -s)"
+ceph_conf_add_to_list "mon_host"            "${public_ip}"
+
+ceph_conf_set "global" "fsid"               "${ceph_fsid}"
+
+ceph_conf_set "global" "cluster_network"    "${cluster_network}"
+ceph_conf_set "global" "public_network"     "${public_network}"
+ceph_conf_set "global" "ms_bind_ipv4"       "on"
+ceph_conf_set "global" "ms_bind_ipv6"       "on"
+
+ceph_conf_set "global" "osd_pool_default_size"              "3"
+ceph_conf_set "global" "osd_pool_default_min_size"          "2"
+
+ceph_conf_set "global" "osd_crush_chooseleaf_type"          "1"
+ceph_conf_set "global" "osd_deep_scrub_randomize_ratio"     "0.5"
+ceph_conf_set "global" "osd_max_backfills"                  "1"
+ceph_conf_set "global" "osd_pool_default_pg_autoscale_mode" "on"
+ceph_conf_set "global" "osd_recovery_max_active"            "1"
+ceph_conf_set "global" "osd_recovery_op_priority"           "3"
+ceph_conf_set "global" "osd_scrub_sleep"                    "0.1"
+
+ceph_conf_set "global" "auth_client_required"  "cephx"
 ceph_conf_set "global" "auth_cluster_required" "cephx"
 ceph_conf_set "global" "auth_service_required" "cephx"
-ceph_conf_set "global" "cluster_network" "${cluster_network}"
-ceph_conf_set "global" "fsid" "${ceph_fsid}"
-ceph_conf_set "global" "mon_host" "${public_ip}"
-ceph_conf_set "global" "ms_bind_ipv4" "on"
-ceph_conf_set "global" "ms_bind_ipv6" "on"
-ceph_conf_set "global" "osd_crush_chooseleaf_type" "1"
-ceph_conf_set "global" "osd_deep_scrub_randomize_ratio" "0.5"
-ceph_conf_set "global" "osd_max_backfills" "1"
-ceph_conf_set "global" "osd_pool_default_min_size" "2"
-ceph_conf_set "global" "osd_pool_default_pg_autoscale_mode" "on"
-ceph_conf_set "global" "osd_pool_default_size" "3"
-ceph_conf_set "global" "osd_recovery_max_active" "1"
-ceph_conf_set "global" "osd_recovery_op_priority" "3"
-ceph_conf_set "global" "osd_scrub_sleep" "0.1"
-ceph_conf_set "global" "public_network" "${public_network}"
 
 set_fs_permissions
 ceph_crash_up

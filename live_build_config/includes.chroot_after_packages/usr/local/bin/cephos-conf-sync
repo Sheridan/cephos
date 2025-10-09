@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/ssh.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 [-hv]
+Update configurations for each cluster node
+
+Options:
+  -h  Show this help message and exit
+  -v  Enable verbose mode
+EOF
+set -euo pipefail
+
+# --- options parse ---
+current_user="cephos"
+user_home=$(get_user_home "${current_user}")
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- functions ---
+
+function update_nodes()
+{
+  log_info "Updating /etc/hosts"
+  while read -r node_name public_ip cluster_ip
+  do
+    if [[ "${node_name}" == "$(hostname -s)" ]]
+    then
+      cephos-conf-reconcile $(verbose_flag)
+    else
+      spread_ssh_key "${user_home}" "${current_user}" "${public_ip}"
+      exec_ssh "${public_ip}" "${current_user}" "cephos-conf-reconcile $(verbose_flag)"
+    fi
+  done < <(get_ceph_hosts)
+}
+
+# --- functions ---
+# --- main ---
+check_user "cephos"
+log_info "Synchronizing configurations between cluster nodes..."
+generate_ssh_key "${user_home}" "${current_user}"
+update_nodes

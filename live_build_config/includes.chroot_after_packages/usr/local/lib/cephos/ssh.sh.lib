@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+ssh_key_type="ed25519"
+
+function generate_ssh_key()
+{
+  local target_home="$1"
+  local target_user="$2"
+  local ssh_dir="${target_home}/.ssh"
+  local key_file="${ssh_dir}/id_${ssh_key_type}"
+
+  log_info "Generating key for user '${target_user}'..."
+  log_info "Key path: ${key_file}"
+
+  if [[ -f "${key_file}" ]]
+  then
+    log_info "Key ${key_file} already exists."
+    return 0
+  fi
+
+  if [[ ! -d "${ssh_dir}" ]]
+  then
+    log_verbose "Creating directory ${ssh_dir}"
+    mkdir -p -m 700 "${ssh_dir}"
+    chown "${target_user}":"${target_user}" "${ssh_dir}"
+  fi
+
+  if ! ssh-keygen -t "${ssh_key_type}" -f "${key_file}" -N "" -C "${target_user}@$(hostname -s)"
+  then
+    log_cry "Failed to generate ${ssh_key_type} key for user ${target_user}" }
+  fi
+
+  chown "${target_user}":"${target_user}" "${key_file}" "${key_file}.pub"
+  chmod 600 "${key_file}"
+  chmod 644 "${key_file}.pub"
+
+  log_info "Key successfully generated for ${target_user}"
+}
+
+function get_user_home()
+{
+  local username="$1"
+  local user_home
+
+  user_home=$(getent passwd "${username}" | cut -d: -f6)
+
+  if [[ -z "${user_home}" ]]
+  then
+    log_cry "Failed to determine home directory for ${username}"
+  fi
+
+  echo "${user_home}"
+}
+
+function spread_ssh_key()
+{
+  local current_user_home="$1"
+  local target_user="$2"
+  local target_host="$3"
+
+  local ssh_dir="${current_user_home}/.ssh"
+  local pub_key_file="${ssh_dir}/id_${ssh_key_type}.pub"
+
+  echo "Copying SSH key for user ${target_user} to ${target_host}..."
+  if ! ssh-copy-id -i "${pub_key_file}" "${target_user}@${target_host}"
+  then
+    log_cry "Error copying key to ${target_host} for ${target_user}"
+  fi
+  log_info "SSH key successfully copied to ${target_host}"
+}
+
+function exec_ssh()
+{
+  local host="$1"
+  local user="$2"
+  local cmd="${@:3}"
+
+  log_info "-------======| Executing on ${user}@${host}: ${cmd} |======-------"
+  ssh -t ${user}@${host} "${cmd}"
+  log_delimiter
+}

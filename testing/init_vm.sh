@@ -25,8 +25,8 @@ vm_ip_index=(
 
 function exec_ssh()
 {
-  local vm="$1"; shift
-  local cmd="$@"
+  local vm="$1"
+  local cmd="${@:2}"
   local vm_ssh_port="${vm_ssh_ports[$vm]}"
 
   log_delimiter

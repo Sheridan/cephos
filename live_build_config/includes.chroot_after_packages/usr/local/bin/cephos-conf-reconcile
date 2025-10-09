@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/network.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 [-hv]
+Update node configuration
+
+Options:
+  -h  Show this help message and exit
+  -v  Enable verbose mode
+EOF
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- functions ---
+
+function update_ceph_conf()
+{
+  log_info "Updating ceph.conf"
+  while read -r node_name public_ip cluster_ip
+  do
+    ceph_conf_add_to_list "mon_initial_members" "${node_name}"
+    ceph_conf_add_to_list "mon_host"            "${public_ip}"
+  done < <(get_ceph_hosts)
+}
+
+function update_hosts()
+{
+  log_info "Updating /etc/hosts"
+  while read -r node_name public_ip cluster_ip
+  do
+    make_hosts_record "${public_ip}"  "${node_name} ${node_name}.$(domainname)"
+    make_hosts_record "${cluster_ip}" "${node_name}-cluster"
+  done < <(get_ceph_hosts)
+}
+
+# --- functions ---
+# --- main ---
+check_user "cephos"
+log_info "Synchronizing configurations between cluster nodes..."
+update_ceph_conf
+update_hosts

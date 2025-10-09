@@ -155,21 +155,24 @@ function ceph_conf_set()
   write_to_ini "${ceph_main_conf}" "${section}" "${variable}" "${value}" ""
 }
 # ---=---
-function get_mon_initial_members()
+function ceph_conf_get_list()
 {
-  read_list_from_ini "${ceph_main_conf}" "global" "mon_initial_members" ""
+  local option="$1"
+  read_list_from_ini "${ceph_main_conf}" "global" "${option}" ""
 }
 
-function add_mon_initial_member()
+function ceph_conf_add_to_list()
 {
-  local member="$1"
-  log_info "Adding mon initial member ${member}"
-  write_to_ini "${ceph_main_conf}" "global" "mon_initial_members" "${member}" "--list"
+  local option="$1"
+  local value="$2"
+  log_verbose "Adding ${value} to ${option}"
+  write_to_ini "${ceph_main_conf}" "global" "${option}" "${value}" "--list"
 }
 
-function del_mon_initial_member()
+function ceph_conf_del_from_list()
 {
-  local member="$1"
-  log_info "Removing mon initial member ${member}"
-  del_list_item_from_ini "${ceph_main_conf}" "global" "mon_initial_members" "${member}"
+  local option="$1"
+  local value="$2"
+  log_verbose "Removing ${value} from ${option}"
+  del_list_item_from_ini "${ceph_main_conf}" "global" "${option}" "${value}"
 }

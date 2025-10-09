@@ -4,6 +4,7 @@
 . /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
+. /usr/local/lib/cephos/ssh.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS Cluster Connection Script
@@ -21,7 +22,6 @@ set -euo pipefail
 
 # --- options parse ---
 current_user="cephos"
-key_type="ed25519"
 cluster_node=""
 while getopts ":p:c:n:hv" opt
 do
@@ -39,80 +39,12 @@ then
   wrong_opt "No cluster node specified"
 fi
 # --- options parse ---
-# --- functions ---
-function generate_ssh_key()
-{
-  local target_home="$1"
-  local target_user="$2"
-  local ssh_dir="${target_home}/.ssh"
-  local key_file="${ssh_dir}/id_${key_type}"
-
-  log_info "Generating key for user '${target_user}'..."
-  log_info "Key path: ${key_file}"
-
-  if [[ -f "${key_file}" ]]
-  then
-    log_info "Key ${key_file} already exists."
-    return 0
-  fi
-
-  if [[ ! -d "${ssh_dir}" ]]
-  then
-    log_verbose "Creating directory ${ssh_dir}"
-    mkdir -p -m 700 "${ssh_dir}"
-    chown "${target_user}":"${target_user}" "${ssh_dir}"
-  fi
-
-  if ! ssh-keygen -t "${key_type}" -f "${key_file}" -N "" -C "${target_user}@$(hostname -s)"
-  then
-    log_cry "Failed to generate ${key_type} key for user ${target_user}" }
-  fi
-
-  chown "${target_user}":"${target_user}" "${key_file}" "${key_file}.pub"
-  chmod 600 "${key_file}"
-  chmod 644 "${key_file}.pub"
-
-  log_info "Key successfully generated for ${target_user}"
-}
-
-function get_user_home()
-{
-  local username="$1"
-  local user_home
-
-  user_home=$(getent passwd "${username}" | cut -d: -f6)
-
-  if [[ -z "${user_home}" ]]
-  then
-    log_cry "Failed to determine home directory for ${username}"
-  fi
-
-  echo "${user_home}"
-}
-
-function spread_ssh_key()
-{
-  local current_user_home="$1"
-  local target_user="$2"
-  local target_host="$3"
-
-  local ssh_dir="${current_user_home}/.ssh"
-  local pub_key_file="${ssh_dir}/id_${key_type}.pub"
-
-  echo "Copying SSH key for user ${target_user} to ${target_host}..."
-  if ! ssh-copy-id -i "${pub_key_file}" "${target_user}@${target_host}"
-  then
-    log_cry "Error copying key for ${target_user}"
-  fi
-}
-# --- functions ---
 # --- main ---
 check_user "cephos"
 
 user_home=$(get_user_home "${current_user}")
 generate_ssh_key "${user_home}" "${current_user}"
 spread_ssh_key "${user_home}" "${current_user}" "${cluster_node}"
-log_info "SSH key successfully copied to ${cluster_node}"
 
 create_directories
 copy_file_from_host "${cluster_node}" "${cephos_conf}/cluster.ini"
