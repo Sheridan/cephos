@@ -69,6 +69,62 @@ function get_ceph_hosts()
   | sort -u
 }
 
+function get_cluster_health_status()
+{
+  ${sudo_ceph} ceph -s -f json | jq -r '.health.status'
+}
+
+function wait_for_cluster_health_ok()
+{
+  local current_status
+  log_info "Waiting for HEALTH_OK..."
+
+  while true
+  do
+    current_status="$(get_cluster_health_status)"
+    log_info "[$(date '+%H:%M:%S')] Health status: ${current_status}"
+
+    if [[ "${current_status}" == "HEALTH_OK" ]]
+    then
+      log_info "HEALTH_OK reached"
+      return 0
+    fi
+
+    sleep 2
+  done
+}
+
+function disk_already_in_ceph()
+{
+  local device="$1"
+  local realdev
+  realdev=$(realpath "$device" 2>/dev/null)
+
+  local osd_id
+  osd_id=$(${sudo_ceph} ceph-volume lvm list "$realdev" 2>/dev/null | awk '/osd id/ {print $3}' | head -n1)
+
+  [[ -z "$osd_id" ]] && return 1
+
+  local osd_path="/var/lib/ceph/osd/ceph-${osd_id}"
+  if [[ ! -d "$osd_path" ]]
+  then
+    return 1
+  fi
+
+  local osd_device
+  osd_device=$(${sudo_ceph} ceph-volume lvm list ${osd_id} | awk '/devices/ {print $2}'  )
+
+  local osd_realdev
+  osd_realdev=$(realpath "$osd_device" 2>/dev/null)
+
+  if [[ "$realdev" == "$osd_realdev" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+
 function prepare_ceph_data()
 {
   log_verbose "Preparing data"

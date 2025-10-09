@@ -48,6 +48,12 @@ fi
 # --- options parse ---
 # --- main ---
 check_user "cephos"
+
+if disk_already_in_ceph "${block_device}"
+then
+  log_cry "Block device ${block_device} already use in ceph"
+fi
+
 ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 
 log_info "Appending disk ${block_device} to mon ${mon_id}"

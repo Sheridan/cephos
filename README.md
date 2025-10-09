@@ -64,8 +64,8 @@ Attention! The usual warning: back up the data from your flash drive first, othe
 1. **Add block devices**
    Append each device to the cluster:
    ```bash
-   cephos-append-disk -v -d /dev/vdb
-   cephos-append-disk -v -d /dev/vdc
+   cephos-disk-add -v -d /dev/vdb
+   cephos-disk-add -v -d /dev/vdc
    ```
 
 1. **Initialize CephFS**
@@ -104,8 +104,8 @@ Attention! The usual warning: back up the data from your flash drive first, othe
 1. **Add block devices**
    Register local storage devices with the cluster:
    ```bash
-   cephos-append-disk -v -d /dev/vdb
-   cephos-append-disk -v -d /dev/vdc
+   cephos-disk-add -v -d /dev/vdb
+   cephos-disk-add -v -d /dev/vdc
    ```
 
 1. **Initialize Metadata Server (MDS)**

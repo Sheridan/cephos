@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/blockdev.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -d <block_device>
+This script removes a block device (OSD) from a Ceph cluster.
+
+Options:
+  -d <block_device> Specify the block device to remove (e.g., /dev/sdb)
+  -h                Show this help message
+  -v                Enable verbose output
+
+Examples:
+  # Remove /dev/sdb from the cluster
+  $0 -d /dev/sdb
+EOF
+set -euo pipefail
+
+# --- options parse ---
+block_device=""
+while getopts ":d:hv" opt
+do
+  case ${opt} in
+    d) block_device="${OPTARG}" ;;
+    h) echo "${help_text}"; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$block_device" ]]; then
+  wrong_opt "Options not specified"
+fi
+
+if [[ ! -b "$block_device" ]]; then
+  log_cry "Block device ${block_device} not exists or not a valid block device"
+fi
+# --- options parse ---
+# --- functions ---
+function get_osd_id()
+{
+  local block_device="$1"
+  ${sudo_ceph} ceph-volume lvm list "${block_device}" --format json | jq -r '.[keys[0]][0].tags["ceph.osd_id"]' 2>/dev/null || true
+}
+# --- functions ---
+# --- main ---
+check_user "cephos"
+
+if ! disk_already_in_ceph "${block_device}"
+then
+  log_cry "Block device ${block_device} not in ceph"
+fi
+
+ask_confirmation "This operation will remove disk ${block_device} from cluster and destroy all data on disk. Continue?"
+
+log_info "Removing disk ${block_device} from mon ${mon_id}"
+
+osd_id=$(get_osd_id "${block_device}")
+if [[ -z "$osd_id" || "$osd_id" == "null" ]]
+then
+  log_cry "Unable to determine OSD id for device ${block_device}."
+fi
+log_info "Detected OSD id: ${osd_id}"
+
+log_info "Marking OSD.${osd_id} as out..."
+${sudo_ceph} ceph osd out ${osd_id} || log_wrn "OSD already out or non-active"
+
+wait_for_cluster_health_ok
+
+log_info "Stopping OSD ${osd_id} service..."
+sudo systemctl stop ceph-osd@${osd_id}.service || log_wrn "Unable to stop ceph-osd@${osd_id}"
+
+log_info "Removing OSD ${osd_id} from cluster..."
+${sudo_ceph} ceph osd crush remove osd.${osd_id} || log_wrn "crush remove failed (may already be removed)"
+${sudo_ceph} ceph auth del osd.${osd_id} || log_wrn "auth already deleted"
+${sudo_ceph} ceph osd rm ${osd_id} || log_wrn "osd rm failed (may already be removed)"
+
+log_info "Zapping device ${block_device}..."
+${sudo_ceph} ceph-volume lvm zap --destroy "${block_device}"
+purge_device "${block_device}"
+
+set_fs_permissions
+
+log_info "OSD ${osd_id} successfully removed and disk ${block_device} is clean."

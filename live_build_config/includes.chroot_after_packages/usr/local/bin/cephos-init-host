@@ -125,8 +125,8 @@ set_node_environment "cluster_ip" "${cluster_ip}"
 _hostname="${fqdn%%.*}"
 _domain="${fqdn#*.}"
 
-make_hosts_record "${public_ip}" "${_hostname} ${fqdn}"
-make_hosts_record "${cluster_ip}" "$(hostname -s)-cluster"
+make_hosts_record "${public_ip}"  "${_hostname} ${_hostname}.${_domain}"
+make_hosts_record "${cluster_ip}" "${_hostname}-cluster"
 
 if [[ "$(hostname -s)" == "${build_hostname}" ]]
 then

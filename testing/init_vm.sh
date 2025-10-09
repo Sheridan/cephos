@@ -68,13 +68,13 @@ function wait_all_vm()
   wait
 }
 
-function inti_first_node()
+function init_first_node()
 {
   local vm="$1"
   exec_ssh "${vm}" "cephos-add-timeserver -v -s 10.0.0.1 -p ru.pool.ntp.org"
   exec_ssh "${vm}" "cephos-init-cluster -v"
-  exec_ssh "${vm}" "echo 'y' | cephos-append-disk -v -d /dev/vdb"
-  exec_ssh "${vm}" "echo 'y' | cephos-append-disk -v -d /dev/vdc"
+  exec_ssh "${vm}" "echo 'y' | cephos-disk-add -v -d /dev/vdb"
+  exec_ssh "${vm}" "echo 'y' | cephos-disk-add -v -d /dev/vdc"
   exec_ssh "${vm}" "cephos-init-cephfs -v"
   exec_ssh "${vm}" "cephos-init-metrics -v"
 }
@@ -85,8 +85,8 @@ function init_next_node()
   local ip_index="${vm_ip_index[$vm]}"
   local parent_ip_index=$(( ip_index - 1 ))
   exec_ssh "${vm}" "cephos-connect-to-cluster -v -n 192.168.0.${parent_ip_index}"
-  exec_ssh "${vm}" "echo 'y' | cephos-append-disk -v -d /dev/vdb"
-  exec_ssh "${vm}" "echo 'y' | cephos-append-disk -v -d /dev/vdc"
+  exec_ssh "${vm}" "echo 'y' | cephos-disk-add -v -d /dev/vdb"
+  exec_ssh "${vm}" "echo 'y' | cephos-disk-add -v -d /dev/vdc"
   exec_ssh "${vm}" "cephos-init-mds -v"
   exec_ssh "${vm}" "cephos-init-metrics -v"
 }
@@ -111,7 +111,7 @@ do
   exec_ssh "${vm}" "echo 'y' | cephos-setup-interface -i ens5 -m 255.255.255.0 -a 192.168.1.${vm_ip_index[$vm]} -n ceph_0"
 done
 
-log_info "Waiting..."
+log_info "Waiting for hosts reboot..."
 sleep 10
 wait_all_vm
 
@@ -126,8 +126,10 @@ for vm in "${vm_hosts[@]}"
 do
   if [[ "${vm}" == "${vm_hosts[0]}" ]]
   then
-    inti_first_node "${vm}"
+    init_first_node "${vm}"
   else
     init_next_node "${vm}"
   fi
 done
+
+exec_ssh "${vm_hosts[0]}" "cephos-conf-sync -v"
