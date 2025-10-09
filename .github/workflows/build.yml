@@ -1,6 +1,6 @@
-name: Build CephOS installer
+name: Build CephOS Installer
 
-run-name: Building CephOS installer ${{ github.ref_name }} (@${{ github.actor }})
+run-name: Building CephOS Installer ${{ github.ref_name }} (@${{ github.actor }})
 
 on:
   release:
@@ -16,16 +16,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up docker
+      - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y make
 
-      - name: Building CephOS
+      - name: Build CephOS
         run: make build
 
-      - name: Rename artifact with release tag
+      - name: Rename artifacts with release tag
         run: |
           TAG=${GITHUB_REF_NAME}
           echo "Using tag: $TAG"
@@ -34,7 +34,7 @@ jobs:
           mv tmp/work/cephos.img           "tmp/work/cephos_${TAG}.img"
           ls -lh tmp/work/
 
-      - name: Get fresh Access Token from Yandex
+      - name: Get fresh access token from Yandex
         id: get_token
         run: |
           RESPONSE=$(curl -s -X POST https://oauth.yandex.ru/token \
@@ -68,12 +68,12 @@ jobs:
               --no-progress-meter \
               "$UPLOAD_URL"
           done
-          echo "Uploading artefacts done."
+          echo "Artifacts upload completed successfully."
 
-      - name: Send build complete message to Telegram
+      - name: Send build completion message to Telegram
         run: |
           TAG=${GITHUB_REF_NAME}
-          MESSAGE="💾 Version ${TAG} build and upload to [storage](https://disk.yandex.ru/d/VrbJWGtHjB90QQ) is complete"
+          MESSAGE="💾 Version ${TAG} build and upload to [storage](https://disk.yandex.ru/d/VrbJWGtHjB90QQ) completed successfully"
           curl -s -X POST \
             "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \

@@ -33,10 +33,6 @@ set_cluster_environment "fsid" "${ceph_fsid}"
 log_info "Initializing cluster with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
 create_directories
 
-log_verbose "Creating keys"
-${sudo_ceph} ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mgr 'allow *' --cap mds 'allow *'
-${sudo_ceph} ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
-
 log_verbose "Creating configuration ${ceph_main_conf}"
 
 ceph_conf_add_to_list "mon_initial_members" "$(hostname -s)"
@@ -63,6 +59,10 @@ ceph_conf_set "global" "osd_scrub_sleep"                    "0.1"
 ceph_conf_set "global" "auth_client_required"  "cephx"
 ceph_conf_set "global" "auth_cluster_required" "cephx"
 ceph_conf_set "global" "auth_service_required" "cephx"
+
+log_verbose "Creating keys"
+${sudo_ceph} ceph-authtool --create-keyring ${ceph_conf_dir}/ceph.client.admin.keyring --gen-key -n client.admin --cap mon 'allow *' --cap osd 'allow *' --cap mgr 'allow *' --cap mds 'allow *'
+${sudo_ceph} ceph-authtool --create-keyring ${ceph_data_dir}/bootstrap-osd/ceph.keyring --gen-key -n client.bootstrap-osd --cap mon 'profile bootstrap-osd' --cap mgr 'allow r'
 
 set_fs_permissions
 ceph_crash_up

@@ -42,6 +42,6 @@ manage_service_state "enable" "ceph-exporter"
 
 log_info "Ceph internal metrics port: 9108"
 ${sudo_ceph} ceph mgr module enable prometheus
-${sudo_ceph} ceph config set mgr mgr/prometheus/server_addr "::"
-${sudo_ceph} ceph config set mgr mgr/prometheus/server_port 9108
+ceph_config_set "mgr" "mgr/prometheus/server_addr" "::"
+ceph_config_set "mgr" "mgr/prometheus/server_port" "9108"
 sudo systemctl restart ceph-mgr@${mgr_id}.service

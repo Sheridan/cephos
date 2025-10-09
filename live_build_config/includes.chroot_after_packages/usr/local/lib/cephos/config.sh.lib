@@ -11,7 +11,7 @@ function write_to_ini()
 
   sudo mkdir -p "$(dirname $inifile)"
 
-  log_verbose "Write '${section}.${variable} = ${value}' to ${inifile}"
+  log_verbose "Write '${value}' to '${section}.${variable}' in ${inifile}"
   sudo crudini --set ${options} "${inifile}" "${section}" "${variable}" "${value}"
 
   if (( $? ))
@@ -147,12 +147,28 @@ function ceph_conf_get()
   read_from_ini "${ceph_main_conf}" "${section}" "${variable}" "none"
 }
 
+# Set value to ceph.conf
 function ceph_conf_set()
 {
   local section="$1"
   local variable="$2"
   local value="$3"
   write_to_ini "${ceph_main_conf}" "${section}" "${variable}" "${value}" ""
+}
+
+# Set value to ceph distributed configuration
+function ceph_config_set()
+{
+  local entity="$1"
+  local key="$2"
+  local value="$3"
+  local force_flag="${4:-}"
+
+  if [[ "$force_flag" == "force" ]] || ! ceph config dump | grep -qE "^[[:space:]]*$entity[[:space:]].*[[:space:]]$key[[:space:]]"
+  then
+    log_verbose "Applying to [$entity:$key] new value: $value"
+    ceph config set "$entity" "$key" "$value"
+  fi
 }
 # ---=---
 function ceph_conf_get_list()

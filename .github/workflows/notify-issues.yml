@@ -1,6 +1,6 @@
 name: Notify on Issue
 
-run-name: Issue notify (@${{ github.actor }})
+run-name: Issue notification (@${{ github.actor }})
 
 on:
   issues:
@@ -10,7 +10,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send issue info to Telegram
+      - name: Send issue information to Telegram
         run: |
           ISSUE_URL="${{ github.event.issue.html_url }}"
           TITLE="${{ github.event.issue.title }}"
@@ -19,7 +19,7 @@ jobs:
 
           if [ "$ACTION" = "opened" ]
           then
-            MESSAGE="🔔 New [Issue](${ISSUE_URL}) from author ${USER} with title: \`${TITLE}\`"
+            MESSAGE="🔔 New [Issue](${ISSUE_URL}) opened by ${USER} with title: \`${TITLE}\`"
           else
             MESSAGE="✅ [Issue](${ISSUE_URL}) closed by ${USER} (Title: \`${TITLE}\`)"
           fi

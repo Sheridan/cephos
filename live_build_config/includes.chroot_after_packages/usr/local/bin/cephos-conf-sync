@@ -32,9 +32,11 @@ done
 
 function update_nodes()
 {
-  log_info "Updating /etc/hosts"
-  while read -r node_name public_ip cluster_ip
+  log_info "Sync cluster nodes configuration"
+  mapfile -t ceph_hosts < <(get_ceph_hosts)
+  for line in "${ceph_hosts[@]}"
   do
+    read -r node_name public_ip cluster_ip <<< "${line}"
     if [[ "${node_name}" == "$(hostname -s)" ]]
     then
       cephos-conf-reconcile $(verbose_flag)
@@ -42,7 +44,7 @@ function update_nodes()
       spread_ssh_key "${user_home}" "${current_user}" "${public_ip}"
       exec_ssh "${public_ip}" "${current_user}" "cephos-conf-reconcile $(verbose_flag)"
     fi
-  done < <(get_ceph_hosts)
+  done
 }
 
 # --- functions ---

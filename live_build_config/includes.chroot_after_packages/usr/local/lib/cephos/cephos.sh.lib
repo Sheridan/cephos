@@ -61,7 +61,7 @@ function dashboard_user_exists()
 
 function get_ceph_hosts()
 {
-  ceph osd metadata -f json \
+  ${sudo_ceph} ceph osd metadata -f json \
   | jq -r '.[] | {host: .hostname, front: .front_addr, back: .back_addr}
             | [.host, (.front | capture("v2:(?<ip>[^:]+)") .ip // "-"),
                       (.back  | capture("v2:(?<ip>[^:]+)") .ip // "-")]
@@ -129,7 +129,6 @@ function disk_already_in_ceph()
   fi
 }
 
-
 function prepare_ceph_data()
 {
   log_verbose "Preparing data"
@@ -163,7 +162,6 @@ function prepare_ceph_data()
 
   sudo_ceph="sudo --preserve-env"
 
-  # log_info "Main conf file: ${ceph_main_conf}"
   log_info "Ceph fsid: ${ceph_fsid}"
   log_info "Ceph id: [mon:${mon_id}], [mgr:${mgr_id}], [mds:${mds_id}]"
 }

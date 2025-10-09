@@ -1,6 +1,6 @@
 name: Notify on Release
 
-run-name: Release ${{ github.ref_name }} notify (@${{ github.actor }})
+run-name: Release ${{ github.ref_name }} notification (@${{ github.actor }})
 
 on:
   release:
@@ -10,13 +10,13 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send release info to Telegram
+      - name: Send release information to Telegram
         run: |
           RELEASE_URL="${{ github.event.release.html_url }}"
           TAG="${{ github.event.release.tag_name }}"
           NAME="${{ github.event.release.name }}"
 
-          MESSAGE="🚀 New [Release](${RELEASE_URL}). Version: *${TAG}*, name: ${NAME}"
+          MESSAGE="🚀 New [Release](${RELEASE_URL}) published. Version: *${TAG}*, Name: ${NAME}"
 
           curl -s -X POST \
             "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \

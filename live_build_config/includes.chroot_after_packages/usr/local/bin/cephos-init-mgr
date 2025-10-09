@@ -48,10 +48,10 @@ then
   log_info "Configuration"
   ${sudo_ceph} ceph mgr module enable dashboard
   ${sudo_ceph} ceph mgr module enable stats
-  ${sudo_ceph} ceph config set mgr mgr/dashboard/server_port 8080
-  ${sudo_ceph} ceph config set mgr mgr/dashboard/ssl false
-  ${sudo_ceph} ceph config set mon mon_warn_on_insecure_global_id_reclaim_allowed false
-  # ${sudo_ceph} ceph restful create-self-signed-cert
+
+  ceph_config_set "mgr" "mgr/dashboard/server_port"                      "8080"
+  ceph_config_set "mgr" "mgr/dashboard/ssl"                              "false"
+  ceph_config_set "mon" "mon_warn_on_insecure_global_id_reclaim_allowed" "false"
 
   if ! dashboard_user_exists "cephos"
   then
