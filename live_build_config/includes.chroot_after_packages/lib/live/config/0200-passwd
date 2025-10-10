@@ -14,7 +14,7 @@ function setup_user()
 flag_file="/var/lib/live/config/passwd"
 if [ ! -f $flag_file ]
 then
-  root_pw=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
+  root_pw=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32)
   setup_user "root" "${root_pw}"
 
   setup_user "cephos" "cephos"

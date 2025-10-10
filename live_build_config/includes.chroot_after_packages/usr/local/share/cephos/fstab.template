@@ -1,0 +1,2 @@
+# Mounting [${ceph_hosts}:${cephfs_name}:${cephfs_path}] to ${mountpoint} for user ${username}
+${ceph_hosts}:${cephfs_path} ${mountpoint} ceph name=${username},secretfile=/etc/ceph/${username}.secret,fs=${cephfs_name},_netdev 0 0

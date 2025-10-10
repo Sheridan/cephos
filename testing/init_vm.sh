@@ -91,17 +91,6 @@ function init_next_node()
   exec_ssh "${vm}" "cephos-init-metrics -v"
 }
 
-# function test()
-# {
-#   local vm="$1"
-#   local ip_index="${vm_ip_index[$vm]}"
-#   local parent_ip_index=$(( ip_index - 1 ))
-#   echo "${vm} - ${ip_index} - ${parent_ip_index}"
-#   exit 0
-# }
-
-# test "ct"
-
 log_info "Initializing networks..."
 for vm in "${vm_hosts[@]}"
 do

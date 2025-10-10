@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/cephfs.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 <-a|-d|-D> -u user_name -g subvolume_group -s subvolume [-hv]
+CephFS user management
+
+Options:
+  -a                   Add user or use existing user (default)
+  -d                   Delete user subvolume caps
+  -D                   Delete user
+  -u <name>            User name
+  -g <subvolume_group> CephFS subvolume group (default _nogroup)
+  -s <subvolume>       CephFS subvolume
+  -h                   Show this help message and exit
+  -v                   Enable verbose mode
+EOF
+set -euo pipefail
+
+# --- options parse ---
+action="add"
+username=""
+grp_name="_nogroup"
+vol_name=""
+while getopts ":g:s:u:adDhv" opt
+do
+  case ${opt} in
+    a) action="add" ;;
+    d) action="del" ;;
+    D) action="DEL" ;;
+    g) grp_name="${OPTARG}" ;;
+    s) vol_name="${OPTARG}" ;;
+    u) username="${OPTARG}" ;;
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$action" ]]
+then
+  wrong_opt "Action not specified (-a|-d|-D)"
+fi
+
+if [[ -z "$username" ]]
+then
+  wrong_opt "Username not specified (-u)"
+fi
+
+if [[ "$username" == "admin" ]]
+then
+  wrong_opt "Do not use admin user!"
+fi
+# --- options parse ---
+# --- functions ---
+function check_exists_vol()
+{
+  if ! subvolumegroup_exists "${grp_name}"
+  then
+    log_cry "Subvolume group ${grp_name} does not exist"
+  fi
+  if ! subvolume_exists "${grp_name}" "${vol_name}"
+  then
+    log_cry "Subvolume [${grp_name}:${vol_name}] does not exist"
+  fi
+}
+
+function make_caps()
+{
+  cephfs_user_subvolume_caps "${username}" "${grp_name}" "${vol_name}" "${action}"
+}
+# --- functions ---
+# --- main ---
+check_user "cephos"
+case "$action" in
+  add)
+    check_exists_vol
+    log_info "Adding caps for [${grp_name}:${vol_name}] for '${username}'"
+    make_caps
+  ;;
+  del)
+    check_exists_vol
+    log_info "Deleting caps for [${grp_name}:${vol_name}] for '${username}'. Deleting '${username}' if caps are still empty"
+    make_caps
+  ;;
+  DEL)
+    ask_confirmation "This operation will delete user '${username}' from the cluster. Continue?"
+    cephfs_user_delete "${username}"
+  ;;
+esac

@@ -2,14 +2,16 @@
 
 # cephos
 CephOS is a Debian Live-based distribution designed for lightweight NAS and SOHO environments.
-It boots from a USB flash drive, provisions local disks for Ceph.
+It boots from a USB flash drive and provisions local disks for Ceph.
 
 The distribution is primarily focused on CephFS, but all Ceph features are still available.
 
 Telegram channel: https://t.me/ceph_os
 
+[Commands list](COMMAND_LIST.md)
+
 # Installation on a USB Flash Drive
-You need to run `cephos_installer.run`, specifying your target block device (for example, your USB flash drive) as the root device.
+You need to run `cephos_installer.run`, specifying your target block device (e.g., your USB flash drive) as the root device.
 
 The script supports two working modes:
 - **write** (default): Write the CephOS image and create persistence partitions.
@@ -26,7 +28,7 @@ The script supports two working modes:
 1. Write image to a device and create a persistence partition on the same device: `./cephos_installer.run -R /dev/sdi`
 1. Write image to a device and create a persistence partition on a different device:`./cephos_installer.run -R /dev/sdi -P /dev/sdj`
 1. Write image to a device, create persistence on another device, and map additional directories: `./cephos_installer.run -R /dev/sdi -P /dev/sdj -p "/dev/sdm:/var/log;/dev/sdn:/var/cache"`
-1. Update image while keeping persistence on the same device: ` ./cephos_installer.run -m update -R /dev/sdi`
+1. Update image while keeping persistence on the same device: `./cephos_installer.run -m update -R /dev/sdi`
 1. Write only the CephOS image (no persistence): `./cephos_installer.run -s -R /dev/sdi`
 
 ## Notes
@@ -52,7 +54,8 @@ Attention! The usual warning: back up the data from your flash drive first, othe
 1. **Configure time synchronization**
    Add time servers for cluster synchronization:
    ```bash
-   cephos-add-timeserver -v -s 10.0.0.1 -p ru.pool.ntp.org
+   cephos-add-timeserver -v -s 10.0.0.1
+   cephos-add-timeserver -v -p ru.pool.ntp.org
    ```
 
 1. **Initialize the cluster database**
@@ -120,13 +123,23 @@ Attention! The usual warning: back up the data from your flash drive first, othe
    cephos-init-metrics -v
    ```
 
+# Finally
+Run script `cephos-conf-sync` on any Ceph node to synchronize sensitive data between Ceph nodes
+
+# Managing cephfs
+1. Use the dashboard to create groups and subvolumes in CephFS
+2. Use `cephos-cephfs-user` to create a user and assign them to a CephFS group/subvolume
+3. Use `cephos-cephfs-mount-helper` to create a tar archive containing everything needed for mounting, including:
+   - mount.sh command
+   - fstab entries
+   - systemd.mount/systemd.automount units
 
 # Defaults
 ## linux
 - Login: cephos
 - Password: cephos
 
-The root user password is complex and random. However, the user *cephos* has the ability to use sudo.
+The root user password is [complex and random](live_build_config/includes.chroot_after_packages/lib/live/config/0200-passwd). However, the user 'cephos' has the ability to use sudo.
 
 ## dashboard
 - Login: cephos

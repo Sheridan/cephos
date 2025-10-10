@@ -41,16 +41,19 @@ function show()
 # --- main ---
 check_user "cephos"
 
-show "Timesync sources" "chronyc sources"   1
-show "Timesync tracking" "chronyc tracking" 1
-show "Timesync activity" "chronyc activity" 1
+show "Time synchronization sources"  "chronyc sources"   1
+show "Time synchronization tracking" "chronyc tracking"  1
+show "Time synchronization activity" "chronyc activity"  1
 
-show "Health"         "ceph health detail"  0
-show "Using"          "ceph df"             0
-show "OSD tree"       "ceph osd tree"       0
-show "OSD df tree"    "ceph osd df tree"    0
-show "OSD perf"       "ceph osd perf"       0
-show "Pools stats"    "ceph osd pool stats" 0
-show "PG stats"       "ceph pg stat"        0
-show "MON stats"      "ceph mon stat"       0
-show "Cluster status" "ceph -s"             0
+show "Cluster health details"     "ceph health detail"   0
+show "Disk usage"                 "ceph df detail"       0
+show "OSD status"                 "ceph osd status"      0
+show "OSD utilization"            "ceph osd utilization" 0
+show "OSD tree structure"         "ceph osd tree"        0
+show "OSD disk usage tree"        "ceph osd df tree"     0
+show "OSD performance metrics"    "ceph osd perf"        0
+show "Pool statistics"            "ceph osd pool stats"  0
+show "Placement Group statistics" "ceph pg stat"         0
+show "Monitor statistics"         "ceph mon stat"        0
+show "CephFS filesystem status"   "ceph fs status"       0
+show "Cluster summary"            "ceph -s"              0

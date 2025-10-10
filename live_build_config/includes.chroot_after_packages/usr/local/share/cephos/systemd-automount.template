@@ -1,0 +1,10 @@
+[Unit]
+Description=Automount [${ceph_hosts}:${cephfs_name}:${cephfs_path}] to ${mountpoint} for user ${username}
+After=network-online.target
+Wants=network-online.target
+
+[Automount]
+Where=${mountpoint}
+
+[Install]
+WantedBy=multi-user.target

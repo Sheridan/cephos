@@ -69,6 +69,11 @@ function get_ceph_hosts()
   | sort -u
 }
 
+function get_flat_ceph_hosts()
+{
+  get_ceph_hosts | awk '{print $1}' | paste -sd, -
+}
+
 function get_local_osd_disks()
 {
   ${sudo_ceph} ceph-volume lvm list | grep devices | awk '{print $2}'

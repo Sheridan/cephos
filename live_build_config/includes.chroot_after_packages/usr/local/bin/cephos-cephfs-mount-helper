@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/cephfs.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -u user_name -g subvolume_group -s subvolume -p mountpoint -o tar_archive_name [-hv]
+CephFS mount helper
+
+Options:
+  -u <name>            User name
+  -g <subvolume_group> CephFS subvolume group (default _nogroup)
+  -s <subvolume>       CephFS subvolume
+  -p <mountpoint>      Client host mountpoint
+  -o <arch_name>       Tar archive name
+  -h                   Show this help message and exit
+  -v                   Enable verbose mode
+EOF
+set -euo pipefail
+
+# --- options parse ---
+username=""
+grp_name="_nogroup"
+vol_name=""
+mountpoint=""
+output_file=""
+while getopts ":o:p:g:s:u:hv" opt
+do
+  case ${opt} in
+    g) grp_name="${OPTARG}" ;;
+    s) vol_name="${OPTARG}" ;;
+    u) username="${OPTARG}" ;;
+    p) mountpoint="${OPTARG}" ;;
+    o) output_file="${OPTARG}" ;;
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$username" ]]
+then
+  wrong_opt "Username not specified (-u)"
+fi
+
+if [[ -z "$mountpoint" ]]
+then
+  wrong_opt "Mountpoint not specified (-p)"
+fi
+
+if [[ -z "$output_file" ]]
+then
+  wrong_opt "Output file not specified (-o)"
+fi
+
+if [[ "$username" == "admin" ]]
+then
+  wrong_opt "Do not use admin user!"
+fi
+
+if ! cephfs_user_exists "${username}"
+then
+  log_cry "Ceph user ${username} does not exist. Please use the cephos-cephfs-user script first"
+fi
+# --- options parse ---
+# --- functions ---
+function check_exists_vol()
+{
+  if ! subvolumegroup_exists "${grp_name}"
+  then
+    log_cry "Subvolume group ${grp_name} does not exist"
+  fi
+  if ! subvolume_exists "${grp_name}" "${vol_name}"
+  then
+    log_cry "Subvolume [${grp_name}:${vol_name}] does not exist"
+  fi
+}
+
+function process_template()
+{
+  local template_file="/usr/local/share/cephos/${1}.template"
+  local output_path="$2"
+  local output_filename="$3"
+  local username="$4"
+  local cephfs_path="$5"
+  local mountpoint="$6"
+  local ceph_hosts="$7"
+  local output_file="${output_path}/${output_filename}"
+
+  log_info "Process template '${template_file}' to '${output_file}'"
+
+  export ceph_hosts mountpoint username cephfs_name cephfs_path cephfs_name
+
+  envsubst < "${template_file}" > "${output_file}"
+}
+
+function mountpoint_to_unit_name()
+{
+  local mount_path="$1"
+  local unit_base
+  unit_base="${mount_path#/}"
+  unit_base="${unit_base//-/\\x2d}"
+  unit_base="${unit_base//./\\x2e}"
+  unit_base="${unit_base//\//-}"
+  echo "${unit_base}"
+}
+
+function archive_directory()
+{
+  local source_dir="$1"
+  local output_file="$2"
+  local output_dir
+  output_dir=$(dirname "${output_file}")
+
+  if [[ ! -d "${output_dir}" ]]
+  then
+    mkdir -p "${output_dir}"
+  fi
+
+  local dir_name
+  dir_name="$(basename "$source_dir")"
+
+  tar -czf "$output_file" -C "$source_dir" .
+}
+
+# --- functions ---
+# --- main ---
+check_user "cephos"
+
+check_exists_vol
+temp_dir=$(mktemp -d)
+sv_path=$(subvolume_path "${grp_name}" "${vol_name}")
+systemd_unit_filename=$(mountpoint_to_unit_name "${mountpoint}")
+ceph_hosts=$(get_flat_ceph_hosts)
+
+log_info "Creating minimal ceph.conf"
+write_to_ini "${temp_dir}/ceph.conf" "global" "fsid"     "${ceph_fsid}"  ""
+write_to_ini "${temp_dir}/ceph.conf" "global" "mon_host" "${ceph_hosts}" ""
+
+log_info "Exporting key of ${username}"
+${sudo_ceph} ceph auth get-key client.${username} > ${temp_dir}/${username}.secret
+${sudo_ceph} ceph auth get     client.${username} > ${temp_dir}/ceph.client.${username}.keyring
+
+process_template "mount"             "${temp_dir}" "mount.sh"                           "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
+process_template "fstab"             "${temp_dir}" "fstab.content"                      "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
+process_template "systemd-mount"     "${temp_dir}" "${systemd_unit_filename}.mount"     "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
+process_template "systemd-automount" "${temp_dir}" "${systemd_unit_filename}.automount" "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
+
+log_info "Pack result to ${output_file}"
+archive_directory "${temp_dir}" "${output_file}"
+rm -rf "${temp_dir}"

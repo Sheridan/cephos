@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/cephfs.sh.lib
+
+function print_group_subvolumes()
+{
+  local grp_name="$1"
+  for vol_name in $(subvolumes "${grp_name}")
+  do
+    sv_bytes_used=$(subvolume_bytes_used "${grp_name}" "${vol_name}")
+    sv_path=$(subvolume_path "${grp_name}" "${vol_name}")
+    echo "  └── Subvol: ${vol_name} | Path: ${sv_path} | Used: ${sv_bytes_used}"
+  done
+}
+
+echo "Group: ${cephfs_nogroup}"
+print_group_subvolumes ""
+
+for grp_name in $(subvolumegroups)
+do
+  sg_bytes_used=$(subvolumegroup_bytes_used "${grp_name}")
+  echo "Group: ${grp_name} | Used: ${sg_bytes_used}"
+  print_group_subvolumes "${grp_name}"
+done

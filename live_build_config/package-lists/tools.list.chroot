@@ -1,6 +1,7 @@
 crudini
 debianutils
 gdisk
+gettext
 git
 htop
 iotop

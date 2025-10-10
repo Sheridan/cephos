@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+
+bytes_format="numfmt --format '%fb' --to=iec"
+cephfs_nogroup="_nogroup"
+
+# ----== subvolumegroups ==----
+
+function subvolumegroups()
+{
+  ${sudo_ceph} ceph fs subvolumegroup ls ${cephfs_name} -f json | jq -r '.[].name' 2>/dev/null
+}
+
+function subvolumegroup_info()
+{
+  local grp_name="$1"
+  ${sudo_ceph} ceph fs subvolumegroup info ${cephfs_name} ${grp_name} 2>/dev/null
+}
+
+function subvolumegroup_exists()
+{
+  local grp_name="$1"
+  if [[ "${grp_name}" == "${cephfs_nogroup}" ]]
+  then
+    return 0
+  fi
+  subvolumegroup_info "${grp_name}" &>/dev/null
+  return $?
+}
+
+function subvolumegroup_bytes_used()
+{
+  local grp_name="$1"
+  local bu
+  bu=$(subvolumegroup_info "${grp_name}" | jq '.bytes_used')
+  ${bytes_format} <<< "${bu}"
+}
+
+# ----== subvolumes ==----
+
+function subvolumes()
+{
+  local grp_name="$1"
+  ${sudo_ceph} ceph fs subvolume ls ${cephfs_name} --group_name "${grp_name}"  -f json 2>/dev/null | jq -r '.[].name'
+}
+
+function subvolume_info()
+{
+  local grp_name="$1"
+  local vol_name="$2"
+  ${sudo_ceph} ceph fs subvolume info ${cephfs_name} ${vol_name} ${grp_name} 2>/dev/null
+}
+
+function subvolume_exists()
+{
+  local grp_name="$1"
+  local vol_name="$2"
+  subvolume_info "${grp_name}" "${vol_name}" &>/dev/null
+  return $?
+}
+
+function subvolume_bytes_used()
+{
+  local grp_name="$1"
+  local vol_name="$2"
+  local bu
+  bu=$(subvolume_info "${grp_name}" "${vol_name}" | jq '.bytes_used')
+  ${bytes_format} <<< "${bu}"
+}
+
+function subvolume_path()
+{
+  local grp_name="$1"
+  local vol_name="$2"
+  subvolume_info "${grp_name}" "${vol_name}" | jq -r '.path'
+}
+
+# ----== users ==----
+
+function cephfs_user_exists()
+{
+  local username="$1"
+  ${sudo_ceph} ceph auth get "client.${username}" &>/dev/null
+}
+
+function cephfs_user_subvolume_caps()
+{
+  local username="$1"
+  local grp_name="$2"
+  local vol_name="$3"
+  local action="$4"
+
+
+  local path
+  path=$(subvolume_path "${grp_name}" "${vol_name}")
+
+  local mon_caps osd_caps mds_caps
+
+  if cephfs_user_exists "${username}"
+  then
+    local caps
+    caps=$(${sudo_ceph} ceph auth get "client.${username}" 2>/dev/null)
+
+    mon_caps=$(echo "$caps" | grep "caps mon" | cut -d"=" -f2- | tr -d '"')
+    osd_caps=$(echo "$caps" | grep "caps osd" | cut -d"=" -f2- | tr -d '"')
+    mds_caps=$(echo "$caps" | grep "caps mds" | cut -d"=" -f2- | tr -d '"')
+
+    mon_caps="${mon_caps:-allow r}"
+    osd_caps="${osd_caps:-allow rw pool=${cephfs_name}_data}"
+
+    case "$action" in
+      add)
+        if echo "${mds_caps}" | grep -Fq "path=${path}"
+        then
+          log_info "Path ${path} is already present in MDS caps for client.${username}"
+          return 0
+        fi
+
+        if [[ -n "$mds_caps" ]]; then
+          mds_caps="${mds_caps},allow rw path=${path}"
+        else
+          mds_caps="allow rw path=${path}"
+        fi
+
+        log_info "Adding MDS path [${grp_name}:${vol_name}] to client.${username}"
+        ;;
+
+      del)
+        if ! echo "${mds_caps}" | grep -Fq "path=${path}"
+        then
+          log_info "Path [${grp_name}:${vol_name}] not found in MDS caps for client.${username}"
+          return 0
+        fi
+
+        mds_caps=$(echo "${mds_caps}" \
+                  | sed "s#,\\?allow [^,]*path=${path}##g" \
+                  | sed 's/^,//;s/,$//')
+
+
+        if [[ -z "$mds_caps" ]]
+        then
+          log_info "All MDS paths removed — MDS caps will be empty. Deleting user client.${username}"
+          cephfs_user_delete "${username}"
+          return 0
+        fi
+
+        log_info "Removing MDS path [${grp_name}:${vol_name}] from client.${username}"
+        ;;
+    esac
+
+    ${sudo_ceph} ceph auth caps "client.${username}" \
+      mon "${mon_caps}" \
+      mds "${mds_caps}" \
+      osd "${osd_caps}"
+
+  else
+    if [[ "$action" == "del" ]]
+    then
+      log_warn "Client client.${username} does not exist — nothing to delete"
+      return 0
+    fi
+
+    mon_caps="allow r"
+    osd_caps="allow rw pool=${cephfs_name}_data"
+    mds_caps="allow rw path=${path}"
+
+    log_info "Creating new caps for client.${username} with path [${grp_name}:${vol_name}]"
+
+    ${sudo_ceph} ceph auth get-or-create "client.${username}" \
+      mon "${mon_caps}" \
+      mds "${mds_caps}" \
+      osd "${osd_caps}"
+  fi
+}
+
+function cephfs_user_delete()
+{
+  local username="$1"
+  log_wrn "Deleting user 'client.${username}'"
+  ${sudo_ceph} ceph auth del "client.${username}" &>/dev/null
+}

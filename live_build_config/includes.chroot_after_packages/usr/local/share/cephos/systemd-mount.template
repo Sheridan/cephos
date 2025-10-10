@@ -1,0 +1,13 @@
+[Unit]
+Description=Mount [${ceph_hosts}:${cephfs_name}:${cephfs_path}] to ${mountpoint} for user ${username}
+After=network-online.target
+Wants=network-online.target
+
+[Mount]
+What=${ceph_hosts}:${cephfs_path}
+Where=${mountpoint}
+Type=ceph
+Options=name=${username},secretfile=/etc/ceph/${username}.secret,fs=${cephfs_name},_netdev
+
+[Install]
+WantedBy=multi-user.target

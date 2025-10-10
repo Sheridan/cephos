@@ -55,6 +55,12 @@ ceph auth get-key client.cephfsuser > /cephos/ceph/conf/cephfsuser.secret
 mkdir -p /mnt/cephos
 mount -t ceph 192.168.0.10,192.168.0.20,192.168.0.30:/ /mnt/cephos -o name=cephfsuser,secretfile=/cephos/ceph/conf/cephfsuser.secret
 ```
+## using mount helper
+```
+# in dashboard make groups and subvolumes
+cephos-cephfs-user -v -a -u sheridan -g user -s sheridan
+cephos-cephfs-mount-helper -u sheridan -g user -s sheridan -p /mnt/sheridan -o ~/mnt-helper/sheridan.tar
+```
 
 ## misc
 ```
