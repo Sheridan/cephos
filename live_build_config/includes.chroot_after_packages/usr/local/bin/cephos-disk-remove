@@ -56,6 +56,7 @@ then
   log_cry "Block device ${block_device} is not in Ceph"
 fi
 
+print_device_info "${block_device}"
 ask_confirmation "This operation will remove disk ${block_device} from the cluster and destroy all data on the disk. Continue?"
 
 log_info "Removing disk ${block_device} from MON ${mon_id}"

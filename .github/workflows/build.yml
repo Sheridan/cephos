@@ -32,6 +32,7 @@ jobs:
           ls -lh tmp/work/
           mv tmp/work/cephos_installer.run "tmp/work/cephos_installer_${TAG}.run"
           mv tmp/work/cephos.img           "tmp/work/cephos_${TAG}.img"
+          mv tmp/work/cephos_logo.png      "tmp/work/cephos_logo_${TAG}.png"
           ls -lh tmp/work/
 
       - name: Get fresh access token from Yandex
@@ -51,7 +52,7 @@ jobs:
       - name: Upload artifacts to Yandex.Disk
         run: |
           TAG=${GITHUB_REF_NAME}
-          for artifact in cephos_installer_${TAG}.run cephos_${TAG}.img
+          for artifact in cephos_installer_${TAG}.run cephos_${TAG}.img cephos_logo_${TAG}.png
           do
             echo "Uploading ${artifact}..."
             UPLOAD_URL=$(curl -s \

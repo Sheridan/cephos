@@ -16,6 +16,7 @@
 | [cephos-disconnect-from-cluster](documentation/cephos-disconnect-from-cluster.md) | Disconnect node from cluster |
 | [cephos-disk-add](documentation/cephos-disk-add.md) | Add disks to cluster |
 | [cephos-disk-remove](documentation/cephos-disk-remove.md) | Remove disks from cluster |
+| [cephos-force-timesync](documentation/cephos-force-timesync.md) | Forced time sync |
 | [cephos-init-cephfs](documentation/cephos-init-cephfs.md) | Initialize Ceph File System |
 | [cephos-init-cluster](documentation/cephos-init-cluster.md) | Initialize new Ceph cluster |
 | [cephos-init-host](documentation/cephos-init-host.md) | Initialize host configuration |
@@ -24,5 +25,6 @@
 | [cephos-init-mgr](documentation/cephos-init-mgr.md) | Initialize Ceph Manager service |
 | [cephos-init-mon](documentation/cephos-init-mon.md) | Initialize Ceph Monitor service |
 | [cephos-mkswap](documentation/cephos-mkswap.md) | Create swap space |
+| [cephos-prometheus-helper](documentation/cephos-prometheus-helper.md) | Generates scrape configuration file for prometheus |
 | [cephos-setup-interface](documentation/cephos-setup-interface.md) | Configure network interfaces |
 | [cephos-status](documentation/cephos-status.md) | Check system status |

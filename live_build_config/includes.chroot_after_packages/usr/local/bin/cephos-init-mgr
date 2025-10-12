@@ -43,11 +43,12 @@ then
   set_fs_permissions
 
   manage_service_state "enable" "ceph-mgr@${mgr_id}"
-  sleep 5
+  sleep 8
 
   log_info "Configuration"
-  ${sudo_ceph} ceph mgr module enable dashboard
-  ${sudo_ceph} ceph mgr module enable stats
+  mgr_module_enable dashboard
+  mgr_module_enable stats
+  sleep 8
 
   ceph_config_set "mgr" "mgr/dashboard/server_port"                      "8080"
   ceph_config_set "mgr" "mgr/dashboard/ssl"                              "false"

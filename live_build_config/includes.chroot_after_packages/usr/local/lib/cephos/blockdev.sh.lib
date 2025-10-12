@@ -37,3 +37,11 @@ function purge_device()
   sudo partprobe ${block_device} || sudo blockdev --rereadpt "${block_device}" || true
   sleep 1
 }
+
+function print_device_info()
+{
+  local device="$1"
+  echo "Device Info: $device"
+  lsblk -o NAME,SIZE,PARTLABEL,LABEL,FSTYPE,MODEL,VENDOR,SERIAL,UUID,MOUNTPOINT "$device"
+  echo "-------------------------------------"
+}

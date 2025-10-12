@@ -14,39 +14,39 @@ function make_hosts_record()
 {
   local ip_address="$1"
   local host_name="$2"
-
   if grep -qE "^[[:space:]]*${ip_address}[[:space:]]+${host_name}(\$|[[:space:]])" "/etc/hosts"
   then
-    log_info "[hosts] Record already exists: ${ip_address} <-> ${host_name}"
+    log_info "Record already exists: ${ip_address} <-> ${host_name}"
     return 0
   fi
 
   if grep -qE "[[:space:]]${host_name}(\$|[[:space:]])" "/etc/hosts"
   then
-    sudo sed -i -E "s/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+${host_name}(\$|[[:space:]].*)/${ip_address}\t${host_name}\1/" "/etc/hosts"
-    log_info "[hosts] Record updated: ${ip_address} <-> ${host_name}"
+    sudo sed -i -E "s/^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+${host_name}(\$|[[:space:]].*)/${ip_address}\t${host_name}\1/" "/etc/hosts"
+    log_info "Record updated: ${ip_address} <-> ${host_name}"
   else
-    echo -e "${ip_address} ${host_name}" | sudo tee -a "/etc/hosts" > /dev/null
-    log_info "[hosts] Record added: ${ip_address} <-> ${host_name}"
+    echo -e "${ip_address}\t${host_name}" | sudo tee -a "/etc/hosts" > /dev/null
+    log_info "Record added: ${ip_address} <-> ${host_name}"
   fi
 }
 
 function delete_hosts_record()
 {
   local host_name="$1"
+  local escaped_host_name
 
-  if ! grep -qE "[[:space:]]${host_name}(\$|[[:space:]])" "/etc/hosts"
+  escaped_host_name=$(printf '%s' "$host_name" | sed 's/[.[\*^$()+?{|}/\\&]/g')
+
+  if ! grep -qE "[[:space:]]${escaped_host_name}(\$|[[:space:]])" "/etc/hosts"
   then
-    log_info "[hosts] Record not found: ${host_name}"
+    log_info "Record not found: ${host_name}"
     return 0
   fi
 
-  sudo sed -i -E "/^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+${host_name}(\$|[[:space:]])/d" "/etc/hosts"
+  sudo sed -i -E "/^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+${escaped_host_name}(\$|[[:space:]])/d" "/etc/hosts"
 
-  log_info "[hosts] Record deleted: ${host_name}"
+  log_info "Record deleted: ${host_name}"
 }
-
-
 
 function copy_file_from_host()
 {

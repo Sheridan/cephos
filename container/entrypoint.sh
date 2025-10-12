@@ -89,6 +89,36 @@ function publish_info()
 	echo "https://t.me/ceph_os"               > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_telegram
 }
 
+function generate_motd()
+{
+  echo "Generating MOTD"
+  local input_file="${project_dir}/COMMAND_LIST.md"
+  local motd_file="${live_build_config_dir}/includes.chroot_after_packages/etc/motd"
+
+  local color_green="\e[1;32m"
+  local color_yllow="\e[1;33m"
+  local color_reset="\e[0m"
+  echo -e "${color_yllow}" > "${motd_file}"
+  cat ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_live_ascii >> "${motd_file}"
+  echo -e "${color_reset}" >> "${motd_file}"
+
+  while IFS='|' read -r _ col_command col_description _
+  do
+    [[ "$col_command" == *"Command"* ]] && continue
+    [[ "$col_command" == *"---"* ]] && continue
+    [[ -z "$col_command" ]] && continue
+
+    local command_name
+    command_name=$(echo "$col_command" | sed -E 's/.*\[(.+?)\].doc.*/\1/' | xargs)
+    local description
+    description=$(echo "$col_description" | xargs)
+    [[ -z "${command_name}" ]] && continue
+
+    printf "  ${color_green}%-30s${color_reset} %s\n" "${command_name}" "${description}" >> "${motd_file}"
+  done < "$input_file"
+  echo -e "\n" >> "$motd_file"
+}
+
 function configure()
 {
 	echo "Configuring lb..."
@@ -110,9 +140,12 @@ function configure()
         --memtest memtest86+ \
         --system live
 
+  # toram -> --bootappend-live
+
   publish_info
   make_splash_image
   set_syslinux_timeout
+  generate_motd
 }
 
 function extract_templates()
@@ -152,6 +185,7 @@ function build()
   local builded_raw_file="${live_build_dir}/live-image-amd64.img"
 	local result_run_file="${work_dir}/cephos_installer.run"
   local result_raw_file="${work_dir}/cephos.img"
+  local result_logo_file="${work_dir}/cephos_logo.png"
 
 	cd ${live_build_dir}
   sudo ${live_build} build
@@ -159,7 +193,8 @@ function build()
 	cat ${project_dir}/tools/run_header.sh "${builded_raw_file}" > "${result_run_file}"
 	chmod oga+x "${result_run_file}"
   cp "${builded_raw_file}" "${result_raw_file}"
-	ls -lah "${result_run_file}" "${result_raw_file}" | awk '{ print $5 " " $9}'
+  cp "${live_build_config_dir}/bootloaders/syslinux/splash.png" "${result_logo_file}"
+  ls -lah "${result_run_file}" "${result_raw_file}" "${result_logo_file}" | awk '{ print $5 " " $9}'
 }
 
 function clean()

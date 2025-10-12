@@ -16,11 +16,12 @@ PubkeyAuthentication yes
 
 AllowAgentForwarding yes
 AllowTcpForwarding yes
-PrintMotd no
-PrintLastLog yes
 MaxStartups 2:50:10
 
 Subsystem sftp /usr/lib/openssh/sftp-server
 
 Compression yes
 PermitTTY yes
+
+PrintMotd no
+PrintLastLog yes

@@ -54,6 +54,7 @@ then
   log_cry "Block device ${block_device} is already in use by Ceph"
 fi
 
+print_device_info "${block_device}"
 ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 
 log_info "Appending disk ${block_device} to MON ${mon_id}"

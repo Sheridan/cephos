@@ -76,6 +76,9 @@ function verbose_flag()
 function usage()
 {
   echo "${help_text}"
+  echo
+  echo -n "CephOS version: "
+  cat /etc/cephos_version
   exit 0
 }
 

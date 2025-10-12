@@ -152,3 +152,6 @@ process_template "systemd-automount" "${temp_dir}" "${systemd_unit_filename}.aut
 log_info "Pack result to ${output_file}"
 archive_directory "${temp_dir}" "${output_file}"
 rm -rf "${temp_dir}"
+
+rpath=$(realpath "${output_file}")
+log_info "scp command: 'scp cephos@$(hostname -s):${rpath} .'"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Run custom live net configuration scripts after network is up
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/live/bin/run-live-net-scripts.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Generates scrape configuration file for prometheus
+
+Options:
+-o <filename> Output file
+-h            Display this help message
+-v            Enable verbose output
+
+Examples:
+$0 -o ~/cephos_yaml.yaml -v
+EOF
+set -euo pipefail
+
+# --- options parse ---
+output_file=""
+while getopts ":o:hv" opt
+do
+  case ${opt} in
+    o) output_file="${OPTARG}" ;;
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$output_file" ]]
+then
+  wrong_opt "Output file not specified (-o)"
+fi
+
+template_file="/usr/local/share/cephos/prometheus_file_sd_config.template"
+exporters=(
+  "node_exporter:9100"
+  "telegraf:9102"
+  "smartctl_exporter:9104"
+  "ceph_exporter:9106"
+  "mgr:9108"
+)
+
+# --- options parse ---
+# --- functions ---
+function process_template()
+{
+  local host_name="$1"
+  local exporter_name="$2"
+  local exporter_port="$3"
+
+  log_info "Process template to '${output_file}'"
+
+  export output_filename host_name exporter_name exporter_port
+
+  envsubst < "${template_file}" >> "${output_file}"
+  echo >> "${output_file}"
+}
+# --- functions ---
+# --- main ---
+check_user "cephos"
+rm -f "${output_file}"
+
+output_dir=$(dirname "${output_file}")
+mkdir -p "${output_dir}"
+
+ceph_hosts=$(get_flat_ceph_hosts)
+for ceph_host in ${ceph_hosts//,/ }
+do
+  for exporter in "${exporters[@]}"
+  do
+    IFS=":" read -r exporter_name exporter_port <<< "$exporter"
+    process_template "${ceph_host}" "${exporter_name}" "${exporter_port}"
+  done
+done
+
+rpath=$(realpath "${output_file}")
+log_info "scp command: 'scp cephos@$(hostname -s):${rpath} .'"

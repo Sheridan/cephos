@@ -134,6 +134,28 @@ function disk_already_in_ceph()
   fi
 }
 
+function mgr_module_enable()
+{
+  local module_name="$1"
+
+  local enabled
+  enabled=$(${sudo_ceph} ceph mgr module ls --format json 2>/dev/null | jq -r --arg mod "${module_name}" '.enabled_modules[] | select(. == $mod)')
+
+  if [[ "$enabled" == "$module_name" ]]
+  then
+    log_info "Module '${module_name}' is already enabled."
+  else
+    log_info "Enabling module '${module_name}'..."
+    if ${sudo_ceph} ceph mgr module enable "${module_name}" --force
+    then
+      echo "Module '${module_name}' has been successfully enabled"
+    else
+      log_cry "Failed to enable module '${module_name}'"
+    fi
+  fi
+}
+
+
 function prepare_ceph_data()
 {
   log_verbose "Preparing data"

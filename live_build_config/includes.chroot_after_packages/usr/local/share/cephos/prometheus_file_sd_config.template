@@ -1,0 +1,5 @@
+- targets:
+    - '${host_name}:${exporter_port}'
+  labels:
+    job: ${exporter_name}
+    host: ${host_name}

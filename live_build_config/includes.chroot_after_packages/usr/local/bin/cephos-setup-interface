@@ -112,12 +112,13 @@ function configure_dhcp()
 # Generated with $0
 auto ${conf_interface}
 iface ${conf_interface} inet dhcp
+iface ${conf_interface} inet6 auto
+    accept_ra 1
+    up   dhclient -6 -v ${conf_interface} || true
+    down dhclient -6 -r ${conf_interface} || true
 EOF
   log_info "Added DHCP config /etc/network/interfaces.d/${conf_interface}"
   clean_old_interface_config
-
-  sudo ifdown "${interface}" 2>/dev/null || true
-  sudo ifup "${interface}"
 }
 
 function configure_static()

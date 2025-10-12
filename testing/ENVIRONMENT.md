@@ -40,7 +40,7 @@ cephos-init-metrics -v
 cephos-setup-interface -i ens4 -m 255.255.255.0 -a 192.168.0.12 -n public_0
 cephos-setup-interface -i ens5 -m 255.255.255.0 -a 192.168.1.12 -n ceph_0
 cephos-init-host -v -n ct.domain.local -z "Europe/Moscow" -P 192.168.0.0/24 -C 192.168.1.0/24 -p 192.168.0.12 -c 192.168.1.12
-cephos-connect-to-cluster -v -n 192.168.0.11 -p 192.168.0.12 -c 192.168.1.12
+cephos-connect-to-cluster -v -n 192.168.0.11
 cephos-disk-add -v -d /dev/vdb
 cephos-disk-add -v -d /dev/vdc
 cephos-init-mds -v
@@ -65,4 +65,52 @@ cephos-cephfs-mount-helper -u sheridan -g user -s sheridan -p /mnt/sheridan -o ~
 ## misc
 ```
 sudo ceph config set mon mon_clock_drift_allowed 1
+```
+
+# polygon
+## ssh
+```
+for n in mirzamon alpherat zubenelh; do ssh-keygen -R cephos-$n; ssh-copy-id cephos@cephos-$n; done
+```
+
+## mirzamon
+```
+ssh cephos@cephos-mirzamon
+cephos-setup-interface -i enp1s0 -d -n public_0
+cephos-setup-interface -i enp2s0 -m 255.255.255.0 -a 172.16.16.1 -n ceph_0
+cephos-init-host -v -n cephos-mirzamon.sheridan-home.local -z "Europe/Moscow" -P 10.0.0.0/8 -C 172.16.16.0/24 -p 10.0.1.24 -c 172.16.16.1
+cephos-force-timesync -v -s 10.0.0.1
+cephos-add-timeserver -v -s 10.0.0.1 -p ru.pool.ntp.org
+cephos-init-cluster -v
+cephos-disk-add -v -d /dev/sda
+cephos-disk-add -v -d /dev/sdb
+cephos-init-cephfs -v
+cephos-init-metrics -v
+```
+
+## alpherat
+```
+ssh cephos@cephos-alpherat
+cephos-setup-interface -i enp1s0 -d -n public_0
+cephos-setup-interface -i enp2s0 -m 255.255.255.0 -a 172.16.16.2 -n ceph_0
+cephos-init-host -v -n cephos-alpherat.sheridan-home.local -z "Europe/Moscow" -P 10.0.0.0/8 -C 172.16.16.0/24 -p 10.0.1.25 -c 172.16.16.2
+cephos-force-timesync -v -s 10.0.0.1
+cephos-connect-to-cluster -v -n 10.0.1.24
+cephos-disk-add -v -d /dev/sda
+cephos-disk-add -v -d /dev/sdb
+cephos-init-mds -v
+cephos-init-metrics -v
+```
+## zubenelh
+```
+ssh cephos@cephos-zubenelh
+cephos-setup-interface -i enp1s0 -d -n public_0
+cephos-setup-interface -i enp2s0 -m 255.255.255.0 -a 172.16.16.3 -n ceph_0
+cephos-init-host -v -n cephos-zubenelh.sheridan-home.local -z "Europe/Moscow" -P 10.0.0.0/8 -C 172.16.16.0/24 -p 10.0.1.26 -c 172.16.16.3
+cephos-force-timesync -v -s 10.0.0.1
+cephos-connect-to-cluster -v -n 10.0.1.25
+cephos-disk-add -v -d /dev/sda
+cephos-disk-add -v -d /dev/sdb
+cephos-init-mds -v
+cephos-init-metrics -v
 ```

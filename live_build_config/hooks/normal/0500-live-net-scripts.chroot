@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+systemctl enable live-net-scripts.service

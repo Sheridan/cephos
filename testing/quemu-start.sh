@@ -3,7 +3,7 @@
 . live_build_config/includes.chroot_after_packages/usr/local/lib/cephos/base.sh.lib
 
 read -r -d '' help_text <<EOF
-  Usage: $0 -s <cluster_conf_string> [-m <memory>] [-d <disk_size>] [-c <cpus>] [-r]
+  Usage: $0 -s <cluster_conf_string> [-m <memory>] [-d <disk_size>] [-c <cpus>] [-n <hdds>] [-r]
   Options:
     -s: VM cluster string
         String format: 'name:flash,flash2...;name1:flash3,flash4,flash5...' etc.
@@ -13,6 +13,8 @@ read -r -d '' help_text <<EOF
         Default: 8G
     -c: VM CPUs (e.g., 2, 4)
         Default: 2
+    -n: VM HDDs (e.g., 2, 4)
+        Default: 3
     -r: Force recreate VM disks
   Examples:
     $0 -s 'one:/dev/sdm,/dev/sdn;two:/dev/sdg,/dev/sdj'
@@ -29,6 +31,7 @@ declare -A processes_pids=()
 vm_disk_size="8G"
 vm_memory="16G"
 vm_cpus=2
+vm_hdds=3
 
 base_ssh_port=2200
 base_http_port=8000
@@ -36,13 +39,14 @@ base_vnc_disp=10
 
 cluster_conf_string=""
 force_recreate=0
-while getopts ":s:d:c:m:rhv" opt
+while getopts ":n:s:d:c:m:rhv" opt
 do
   case ${opt} in
     s) cluster_conf_string="${OPTARG}" ;;
     m) vm_memory="${OPTARG}" ;;
     d) vm_disk_size="${OPTARG}" ;;
     c) vm_cpus="${OPTARG}" ;;
+    n) vm_hdds="${OPTARG}" ;;
     r) force_recreate=1 ;;
     h) usage; exit 0 ;;
     v) verbose=1 ;;
@@ -81,11 +85,6 @@ function run_vm()
   local vmname=$1; shift
   local disks=("$@")
 
-  local qemu_hdd_0="tmp/${vmname}-hdd0.img"
-  local qemu_hdd_1="tmp/${vmname}-hdd1.img"
-  create_qemu_hdd "${qemu_hdd_0}"
-  create_qemu_hdd "${qemu_hdd_1}"
-
   local vm_drives=()
   for rawdev in "${disks[@]}"
   do
@@ -96,8 +95,12 @@ function run_vm()
     vm_drives+=("-drive" "if=virtio,file=${rawdev},format=raw,cache=none")
   done
 
-  vm_drives+=("-drive" "if=virtio,file=${qemu_hdd_0},format=qcow2")
-  vm_drives+=("-drive" "if=virtio,file=${qemu_hdd_1},format=qcow2")
+  for ((i=0; i<vm_hdds; i++))
+  do
+    local vhdd_file="tmp/${vmname}-hdd${i}.img"
+    create_qemu_hdd "${vhdd_file}"
+    vm_drives+=("-drive" "if=virtio,file=${vhdd_file},format=qcow2")
+  done
 
   local idx=$((vm_index++))
   local vnc_disp=$((base_vnc_disp + idx))

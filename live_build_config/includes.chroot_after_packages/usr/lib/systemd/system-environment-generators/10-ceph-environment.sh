@@ -10,3 +10,5 @@ function apply_environment()
   echo "CEPH_CLUSTER=ceph"
   echo "CEPH_CONF='${ceph_main_conf}'"
 }
+
+apply_environment

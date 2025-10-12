@@ -99,7 +99,7 @@ function restart_shell()
 
 function set_timezone()
 {
-  if [[ -n "${timezone}"  ]]
+  if [[ -n "${timezone}" ]]
   then
     if [[ ! -f "/usr/share/zoneinfo/${timezone}" ]]
     then
@@ -125,16 +125,16 @@ set_node_environment "cluster_ip" "${cluster_ip}"
 _hostname="${fqdn%%.*}"
 _domain="${fqdn#*.}"
 
-make_hosts_record "${public_ip}"  "${_hostname} ${_hostname}.${_domain}"
-make_hosts_record "${cluster_ip}" "${_hostname}-cluster"
-
 if [[ "$(hostname -s)" == "${build_hostname}" ]]
 then
   log_info "Setting hostname to ${_hostname} and domain to ${_domain}"
-  sudo sed -i.bak -E "s/[[:space:]]*\b${build_hostname}\b//g; s/[[:space:]]+/ /g" /etc/hosts
+  sudo sed -E "s/[[:space:]]*\b${build_hostname}\b//g; s/[[:space:]]+/ /g" /etc/hosts
   sudo domainname "${_domain}"
   sudo hostnamectl hostname "${_hostname}"
   restart_shell
 else
   log_info "Hostname already applied"
 fi
+
+make_hosts_record "${public_ip}"  "${_hostname} ${_hostname}.${_domain}"
+make_hosts_record "${cluster_ip}" "${_hostname}-cluster"

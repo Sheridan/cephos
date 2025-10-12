@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+
+read -r -d '' help_text <<EOF
+CephOS forced time sync
+
+Options:
+-s <host>  Specify the time server host
+-h         Display this help message
+-v         Enable verbose output
+
+Examples:
+$0 -s time.domain.local -v
+EOF
+set -euo pipefail
+
+# --- options parse ---
+time_server=""
+while getopts ":s:hv" opt
+do
+  case ${opt} in
+    s) time_server="${OPTARG}" ;;
+    h) usage; exit 0 ;;
+    v) verbose=1 ;;
+    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$time_server" ]]
+then
+  wrong_opt "Time server not specified"
+fi
+# --- options parse ---
+# --- main ---
+check_user "cephos"
+
+ask_confirmation "This operation may cause some unpredictable consequences if the time is highly desynchronized. Continue?"
+
+sudo systemctl stop chrony.service
+sudo chronyd -q "server ${time_server} iburst"
+sudo systemctl start chrony.service
