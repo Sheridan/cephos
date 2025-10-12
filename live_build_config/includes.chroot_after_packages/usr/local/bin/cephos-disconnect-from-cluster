@@ -14,25 +14,24 @@ Options:
 -v: Enable verbose output
 EOF
 set -euo pipefail
-
-# --- options parse ---
-while getopts ":hv" opt
-do
-  case ${opt} in
-    h) usage; exit 0 ;;
-    v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
-  esac
-done
-
-# --- options parse ---
 # --- functions ---
 function get_local_mds_gid()
 {
   ${sudo_ceph} ceph fs dump -f json | jq "[.filesystems[].mdsmap.info[], .standbys[]] | flatten | map(select(.name==\"${mds_id}\")) | .[].gid"
 }
 # --- functions ---
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+
 # --- main ---
 check_user "cephos"
 ask_confirmation "This operation will remove all local disks from the cluster and destroy all data on disks. Finally, it will remove this node from the cluster. Continue?"

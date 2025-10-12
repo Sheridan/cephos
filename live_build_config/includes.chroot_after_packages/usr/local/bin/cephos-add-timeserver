@@ -16,27 +16,6 @@ $0 -p 0.pool.ntp.org
 $0 -s time.domain.local -v
 EOF
 set -euo pipefail
-
-# --- options parse ---
-time_server=""
-time_pool=""
-while getopts ":s:p:hv" opt
-do
-  case ${opt} in
-    s) time_server="${OPTARG}" ;;
-    p) time_pool="${OPTARG}" ;;
-    h) usage; exit 0 ;;
-    v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
-  esac
-done
-
-if [[ -z "$time_server" || -z "$time_pool" ]]
-then
-  wrong_opt "Options not specified"
-fi
-# --- options parse ---
 # --- functions ---
 function append_to_chrony()
 {
@@ -48,6 +27,26 @@ function append_to_chrony()
   echo "${kind} ${addr} iburst" | sudo tee "${filename}"
 }
 # --- functions ---
+# --- options parse ---
+time_server=""
+time_pool=""
+while getopts ":s:p:hv" opt
+do
+  case ${opt} in
+    s) time_server="${OPTARG}" ;;
+    p) time_pool="${OPTARG}" ;;
+    h) usage ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$time_server" || -z "$time_pool" ]]
+then
+  wrong_opt "Options not specified"
+fi
+# --- options parse ---
 # --- main ---
 check_user "cephos"
 

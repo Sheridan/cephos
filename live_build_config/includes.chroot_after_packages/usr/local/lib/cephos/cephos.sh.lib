@@ -155,6 +155,15 @@ function mgr_module_enable()
   fi
 }
 
+function osd_id_list()
+{
+  ${sudo_ceph} ceph osd ls 2>/dev/null
+}
+
+function osd_any_id()
+{
+  pgrep -a ceph-osd | awk '{for (i=1;i<=NF;i++) if ($i=="--id") print $(i+1)}'
+}
 
 function prepare_ceph_data()
 {

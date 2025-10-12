@@ -19,7 +19,13 @@ Examples:
   $0 -d /dev/sdb
 EOF
 set -euo pipefail
-
+# --- functions ---
+function get_osd_id()
+{
+  local block_device="$1"
+  ${sudo_ceph} ceph-volume lvm list "${block_device}" --format json | jq -r '.[keys[0]][0].tags["ceph.osd_id"]' 2>/dev/null || true
+}
+# --- functions ---
 # --- options parse ---
 block_device=""
 while getopts ":d:hv" opt
@@ -41,13 +47,6 @@ if [[ ! -b "$block_device" ]]; then
   log_cry "Block device ${block_device} does not exist or is not a valid block device"
 fi
 # --- options parse ---
-# --- functions ---
-function get_osd_id()
-{
-  local block_device="$1"
-  ${sudo_ceph} ceph-volume lvm list "${block_device}" --format json | jq -r '.[keys[0]][0].tags["ceph.osd_id"]' 2>/dev/null || true
-}
-# --- functions ---
 # --- main ---
 check_user "cephos"
 

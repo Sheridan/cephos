@@ -48,7 +48,7 @@ do
     c) vm_cpus="${OPTARG}" ;;
     n) vm_hdds="${OPTARG}" ;;
     r) force_recreate=1 ;;
-    h) usage; exit 0 ;;
+    h) usage ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;

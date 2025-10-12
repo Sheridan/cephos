@@ -114,3 +114,9 @@ cephos-disk-add -v -d /dev/sdb
 cephos-init-mds -v
 cephos-init-metrics -v
 ```
+
+## finally
+```
+cephos-cephfs-compression -v -a lz4 -m aggressive -r 0.9
+cephos-conf-sync -v
+```

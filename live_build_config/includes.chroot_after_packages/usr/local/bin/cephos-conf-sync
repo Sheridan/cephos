@@ -14,22 +14,7 @@ Options:
   -v  Enable verbose mode
 EOF
 set -euo pipefail
-
-# --- options parse ---
-current_user="cephos"
-user_home=$(get_user_home "${current_user}")
-while getopts ":hv" opt
-do
-  case ${opt} in
-    h) usage; exit 0 ;;
-    v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
-  esac
-done
-# --- options parse ---
 # --- functions ---
-
 function update_nodes()
 {
   log_info "Sync cluster nodes configuration"
@@ -46,8 +31,20 @@ function update_nodes()
     fi
   done
 }
-
 # --- functions ---
+# --- options parse ---
+current_user="cephos"
+user_home=$(get_user_home "${current_user}")
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
 # --- main ---
 check_user "cephos"
 log_info "Synchronizing configurations between cluster nodes..."

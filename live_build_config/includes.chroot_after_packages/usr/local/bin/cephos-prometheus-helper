@@ -16,14 +16,28 @@ Examples:
 $0 -o ~/cephos_yaml.yaml -v
 EOF
 set -euo pipefail
+# --- functions ---
+function process_template()
+{
+  local host_name="$1"
+  local exporter_name="$2"
+  local exporter_port="$3"
 
+  log_info "Process template to '${output_file}'"
+
+  export output_filename host_name exporter_name exporter_port
+
+  envsubst < "${template_file}" >> "${output_file}"
+  echo >> "${output_file}"
+}
+# --- functions ---
 # --- options parse ---
 output_file=""
 while getopts ":o:hv" opt
 do
   case ${opt} in
     o) output_file="${OPTARG}" ;;
-    h) usage; exit 0 ;;
+    h) usage ;;
     v) verbose=1 ;;
     \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
@@ -43,23 +57,7 @@ exporters=(
   "ceph_exporter:9106"
   "mgr:9108"
 )
-
 # --- options parse ---
-# --- functions ---
-function process_template()
-{
-  local host_name="$1"
-  local exporter_name="$2"
-  local exporter_port="$3"
-
-  log_info "Process template to '${output_file}'"
-
-  export output_filename host_name exporter_name exporter_port
-
-  envsubst < "${template_file}" >> "${output_file}"
-  echo >> "${output_file}"
-}
-# --- functions ---
 # --- main ---
 check_user "cephos"
 rm -f "${output_file}"

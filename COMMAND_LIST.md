@@ -5,6 +5,7 @@
 | Command | Description |
 |---------|-------------|
 | [cephos-add-timeserver](documentation/cephos-add-timeserver.md) | Configure time server settings |
+| [cephos-cephfs-compression](documentation/cephos-cephfs-compression.md) | CephFS compression management |
 | [cephos-cephfs-mount-helper](documentation/cephos-cephfs-mount-helper.md) | Create CephFS mount configuration |
 | [cephos-cephfs-top](documentation/cephos-cephfs-top.md) | Monitor CephFS performance |
 | [cephos-cephfs-user](documentation/cephos-cephfs-user.md) | Manage CephFS users |

@@ -19,53 +19,6 @@ Options:
   -v                   Enable verbose mode
 EOF
 set -euo pipefail
-
-# --- options parse ---
-username=""
-grp_name="_nogroup"
-vol_name=""
-mountpoint=""
-output_file=""
-while getopts ":o:p:g:s:u:hv" opt
-do
-  case ${opt} in
-    g) grp_name="${OPTARG}" ;;
-    s) vol_name="${OPTARG}" ;;
-    u) username="${OPTARG}" ;;
-    p) mountpoint="${OPTARG}" ;;
-    o) output_file="${OPTARG}" ;;
-    h) usage; exit 0 ;;
-    v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
-  esac
-done
-
-if [[ -z "$username" ]]
-then
-  wrong_opt "Username not specified (-u)"
-fi
-
-if [[ -z "$mountpoint" ]]
-then
-  wrong_opt "Mountpoint not specified (-p)"
-fi
-
-if [[ -z "$output_file" ]]
-then
-  wrong_opt "Output file not specified (-o)"
-fi
-
-if [[ "$username" == "admin" ]]
-then
-  wrong_opt "Do not use admin user!"
-fi
-
-if ! cephfs_user_exists "${username}"
-then
-  log_cry "Ceph user ${username} does not exist. Please use the cephos-cephfs-user script first"
-fi
-# --- options parse ---
 # --- functions ---
 function check_exists_vol()
 {
@@ -127,6 +80,52 @@ function archive_directory()
 }
 
 # --- functions ---
+# --- options parse ---
+username=""
+grp_name="_nogroup"
+vol_name=""
+mountpoint=""
+output_file=""
+while getopts ":o:p:g:s:u:hv" opt
+do
+  case ${opt} in
+    g) grp_name="${OPTARG}" ;;
+    s) vol_name="${OPTARG}" ;;
+    u) username="${OPTARG}" ;;
+    p) mountpoint="${OPTARG}" ;;
+    o) output_file="${OPTARG}" ;;
+    h) usage ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$username" ]]
+then
+  wrong_opt "Username not specified (-u)"
+fi
+
+if [[ -z "$mountpoint" ]]
+then
+  wrong_opt "Mountpoint not specified (-p)"
+fi
+
+if [[ -z "$output_file" ]]
+then
+  wrong_opt "Output file not specified (-o)"
+fi
+
+if [[ "$username" == "admin" ]]
+then
+  wrong_opt "Do not use admin user!"
+fi
+
+if ! cephfs_user_exists "${username}"
+then
+  log_cry "Ceph user ${username} does not exist. Please use the cephos-cephfs-user script first"
+fi
+# --- options parse ---
 # --- main ---
 check_user "cephos"
 

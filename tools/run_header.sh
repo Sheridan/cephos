@@ -39,7 +39,7 @@ write_image_only=0
 while getopts ":R:P:m:p:hs" opt
 do
   case ${opt} in
-    h) usage; exit 0 ;;
+    h) usage ;;
     s) write_image_only=1 ;;
     R) root_block_device="${OPTARG}" ;;
     P) root_persistence_block_device="${OPTARG}" ;;

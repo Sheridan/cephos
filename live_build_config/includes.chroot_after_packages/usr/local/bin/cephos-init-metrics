@@ -18,7 +18,7 @@ set -euo pipefail
 while getopts ":hv" opt
 do
   case ${opt} in
-    h) usage; exit 0 ;;
+    h) usage ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;

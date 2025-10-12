@@ -20,7 +20,24 @@ Options:
   -v                   Enable verbose mode
 EOF
 set -euo pipefail
+# --- functions ---
+function check_exists_vol()
+{
+  if ! subvolumegroup_exists "${grp_name}"
+  then
+    log_cry "Subvolume group ${grp_name} does not exist"
+  fi
+  if ! subvolume_exists "${grp_name}" "${vol_name}"
+  then
+    log_cry "Subvolume [${grp_name}:${vol_name}] does not exist"
+  fi
+}
 
+function make_caps()
+{
+  cephfs_user_subvolume_caps "${username}" "${grp_name}" "${vol_name}" "${action}"
+}
+# --- functions ---
 # --- options parse ---
 action="add"
 username=""
@@ -35,7 +52,7 @@ do
     g) grp_name="${OPTARG}" ;;
     s) vol_name="${OPTARG}" ;;
     u) username="${OPTARG}" ;;
-    h) usage; exit 0 ;;
+    h) usage ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
@@ -57,24 +74,6 @@ then
   wrong_opt "Do not use admin user!"
 fi
 # --- options parse ---
-# --- functions ---
-function check_exists_vol()
-{
-  if ! subvolumegroup_exists "${grp_name}"
-  then
-    log_cry "Subvolume group ${grp_name} does not exist"
-  fi
-  if ! subvolume_exists "${grp_name}" "${vol_name}"
-  then
-    log_cry "Subvolume [${grp_name}:${vol_name}] does not exist"
-  fi
-}
-
-function make_caps()
-{
-  cephfs_user_subvolume_caps "${username}" "${grp_name}" "${vol_name}" "${action}"
-}
-# --- functions ---
 # --- main ---
 check_user "cephos"
 case "$action" in

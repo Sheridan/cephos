@@ -26,7 +26,35 @@ Examples:
 $0 -n ceph-first.domain.local -P 10.10.0.0/24 -C 10.20.0.0/24 -p 10.10.0.100 -c 10.20.0.100
 EOF
 set -euo pipefail
+# --- functions ---
+function restart_shell()
+{
+  local current_shell executable_name
+  current_shell=$(ps -p $$ -o comm=)
+  executable_name=$(basename "${current_shell}")
 
+  log_verbose "Reinitializing current shell: ${executable_name}"
+
+  case "${executable_name}" in
+    bash) source ~/.bashrc ;;
+     zsh) source ~/.zshrc ;;
+       *) log_cry "Unknown shell: ${executable_name}" ;;
+  esac
+}
+
+function set_timezone()
+{
+  if [[ -n "${timezone}" ]]
+  then
+    if [[ ! -f "/usr/share/zoneinfo/${timezone}" ]]
+    then
+      log_cry "Error: Timezone '${timezone}' not found under /usr/share/zoneinfo"
+    fi
+    log_info "Setting timezone to ${timezone} via timedatectl..."
+    sudo timedatectl set-timezone "${timezone}"
+  fi
+}
+# --- functions ---
 # --- options parse ---
 fqdn=""
 public_network=""
@@ -43,7 +71,7 @@ do
     p) public_ip="${OPTARG}" ;;
     c) cluster_ip="${OPTARG}" ;;
     z) timezone="${OPTARG}" ;;
-    h) usage; exit 0 ;;
+    h) usage ;;
     v) verbose=1 ;;
    \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
@@ -80,36 +108,6 @@ then
   cluster_ip="${public_ip}"
 fi
 # --- options parse ---
-
-# --- functions ---
-function restart_shell()
-{
-  local current_shell executable_name
-  current_shell=$(ps -p $$ -o comm=)
-  executable_name=$(basename "${current_shell}")
-
-  log_verbose "Reinitializing current shell: ${executable_name}"
-
-  case "${executable_name}" in
-    bash) source ~/.bashrc ;;
-     zsh) source ~/.zshrc ;;
-       *) log_cry "Unknown shell: ${executable_name}" ;;
-  esac
-}
-
-function set_timezone()
-{
-  if [[ -n "${timezone}" ]]
-  then
-    if [[ ! -f "/usr/share/zoneinfo/${timezone}" ]]
-    then
-      log_cry "Error: Timezone '${timezone}' not found under /usr/share/zoneinfo"
-    fi
-    log_info "Setting timezone to ${timezone} via timedatectl..."
-    sudo timedatectl set-timezone "${timezone}"
-  fi
-}
-# --- functions ---
 # --- main ---
 check_user "cephos"
 

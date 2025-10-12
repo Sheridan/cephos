@@ -20,63 +20,6 @@ Examples:
   $0 -i eth0 -d -n public_0
 EOF
 set -euo pipefail
-
-# --- options parse ---
-udev_rules_file="/etc/udev/rules.d/70-persistent-net.rules"
-interface=""
-address=""
-netmask=""
-new_interface_name=""
-dhcp=0
-while getopts ":i:a:m:n:dhv" opt
-do
-  case "$opt" in
-    i) interface="$OPTARG" ;;
-    a) address="$OPTARG" ;;
-    m) netmask="$OPTARG" ;;
-    n) new_interface_name="$OPTARG" ;;
-    d) dhcp=1 ;;
-    v) verbose=1 ;;
-    h) usage; exit 0 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
-  esac
-done
-
-if [[ -z "$interface" ]]
-then
-  wrong_opt "Error: parameter -i <interface> is required."
-fi
-
-if [[ ! "$interface" =~ ^[a-zA-Z0-9_-]+$ ]]
-then
-  wrong_opt "Error: interface name (${interface}) contains invalid characters"
-fi
-
-if [[ -n "$new_interface_name" && ! "$new_interface_name" =~ ^[a-zA-Z0-9_-]+$ ]]
-then
-  wrong_opt "Error: new interface name (${new_interface_name}) contains invalid characters"
-fi
-
-if [[ "$dhcp" -eq 0 && ( -z "$address" || -z "$netmask" ) ]]
-then
-  wrong_opt "Error: parameters -a <address> and -n <netmask> are required in static mode."
-fi
-
-# Validate IP address format
-if [[ "$dhcp" -eq 0 ]]
-then
-  if ! echo "$address" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
-  then
-    wrong_opt "Error: invalid IP address format"
-  fi
-
-  if ! echo "$netmask" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
-  then
-    wrong_opt "Error: invalid netmask format"
-  fi
-fi
-# --- options parse ---
 # --- functions ---
 function get_first_non_empty_variable()
 {
@@ -177,6 +120,62 @@ function add_udev_rule()
   printf 'SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="%s", NAME="%s"\n' "${interface_mac}" "${new_interface_name}" | sudo tee -a "$udev_rules_file" >/dev/null
 }
 # --- functions ---
+# --- options parse ---
+udev_rules_file="/etc/udev/rules.d/70-persistent-net.rules"
+interface=""
+address=""
+netmask=""
+new_interface_name=""
+dhcp=0
+while getopts ":i:a:m:n:dhv" opt
+do
+  case "$opt" in
+    i) interface="$OPTARG" ;;
+    a) address="$OPTARG" ;;
+    m) netmask="$OPTARG" ;;
+    n) new_interface_name="$OPTARG" ;;
+    d) dhcp=1 ;;
+    v) verbose=1 ;;
+    h) usage ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
+  esac
+done
+
+if [[ -z "$interface" ]]
+then
+  wrong_opt "Error: parameter -i <interface> is required."
+fi
+
+if [[ ! "$interface" =~ ^[a-zA-Z0-9_-]+$ ]]
+then
+  wrong_opt "Error: interface name (${interface}) contains invalid characters"
+fi
+
+if [[ -n "$new_interface_name" && ! "$new_interface_name" =~ ^[a-zA-Z0-9_-]+$ ]]
+then
+  wrong_opt "Error: new interface name (${new_interface_name}) contains invalid characters"
+fi
+
+if [[ "$dhcp" -eq 0 && ( -z "$address" || -z "$netmask" ) ]]
+then
+  wrong_opt "Error: parameters -a <address> and -n <netmask> are required in static mode."
+fi
+
+# Validate IP address format
+if [[ "$dhcp" -eq 0 ]]
+then
+  if ! echo "$address" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
+  then
+    wrong_opt "Error: invalid IP address format"
+  fi
+
+  if ! echo "$netmask" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
+  then
+    wrong_opt "Error: invalid netmask format"
+  fi
+fi
+# --- options parse ---
 # --- main ---
 check_user "cephos"
 

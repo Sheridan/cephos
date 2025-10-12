@@ -76,6 +76,7 @@ function verbose_flag()
 function usage()
 {
   echo "${help_text}"
+  echo "$@"
   echo
   echo -n "CephOS version: "
   cat /etc/cephos_version
@@ -152,4 +153,10 @@ function ensure_symlink_correct()
   fi
 
   sudo ln -s "${target_dir}" "${symlink_path}" || { log_cry "Cannot create symlink '${symlink_path}'."; }
+}
+
+function is_float()
+{
+  local value="$1"
+  [[ "$value" =~ ^-?[0-9]+([.][0-9]+)?$ ]]
 }
