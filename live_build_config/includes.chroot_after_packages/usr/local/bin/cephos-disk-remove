@@ -11,6 +11,7 @@ This script removes a block device (OSD) from a Ceph cluster.
 
 Options:
   -d <block_device> Specify the block device to remove (e.g., /dev/sdb)
+  -f                Force remove, no wait HEALTH_OK
   -h                Show this help message
   -v                Enable verbose output
 
@@ -28,13 +29,15 @@ function get_osd_id()
 # --- functions ---
 # --- options parse ---
 block_device=""
-while getopts ":d:hv" opt
+force=0
+while getopts ":d:fhv" opt
 do
   case ${opt} in
     d) block_device="${OPTARG}" ;;
-    h) echo "${help_text}"; exit 0 ;;
+    f) force=1   ;;
+    h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
@@ -56,21 +59,22 @@ then
 fi
 
 print_device_info "${block_device}"
-ask_confirmation "This operation will remove disk ${block_device} from the cluster and destroy all data on the disk. Continue?"
-
-log_info "Removing disk ${block_device} from MON ${mon_id}"
-
 osd_id=$(get_osd_id "${block_device}")
 if [[ -z "$osd_id" || "$osd_id" == "null" ]]
 then
   log_cry "Unable to determine OSD ID for device ${block_device}."
 fi
 log_info "Detected OSD ID: ${osd_id}"
+ask_confirmation "This operation will remove disk ${block_device} from the cluster and destroy all data on the disk. Continue?"
 
+log_info "Removing disk ${block_device} from MON ${mon_id}"
 log_info "Marking OSD.${osd_id} as out..."
 ${sudo_ceph} ceph osd out ${osd_id} || log_wrn "OSD already out or non-active"
 
-wait_for_cluster_health_ok
+if (( ! force ))
+then
+  wait_for_cluster_health_ok
+fi
 
 log_info "Stopping OSD ${osd_id} service..."
 sudo systemctl stop ceph-osd@${osd_id}.service || log_wrn "Unable to stop ceph-osd@${osd_id}"
@@ -81,10 +85,16 @@ ${sudo_ceph} ceph auth del osd.${osd_id} || log_wrn "auth already deleted"
 ${sudo_ceph} ceph osd rm ${osd_id} || log_wrn "osd rm failed (may already be removed)"
 ${sudo_ceph} ceph osd purge ${osd_id} --yes-i-really-mean-it
 
-log_info "Zapping device ${block_device}..."
-${sudo_ceph} ceph-volume lvm zap --destroy "${block_device}"
+if (( ! force ))
+then
+  log_info "Zapping device ${block_device}..."
+  ${sudo_ceph} ceph-volume lvm zap --destroy "${block_device}"
+  log_info "Disk ${block_device} is cleaned."
+fi
+
 purge_device "${block_device}"
+log_info "Disk ${block_device} is purged"
 
 set_fs_permissions
 
-log_info "OSD ${osd_id} successfully removed and disk ${block_device} is clean."
+log_info "OSD ${osd_id} and disk ${block_device} is removed from ceph."

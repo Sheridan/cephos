@@ -9,7 +9,7 @@ The `cephos-conf-sync` script synchronizes configurations across all cluster nod
 
 ## Functionality
 1. Generates SSH keys for the current user if they don't exist
-2. Synchronizes configuration across all cluster nodes by:
+1. Synchronizes configuration across all cluster nodes by:
    - Executing `cephos-conf-reconcile` on each node
    - Using SSH to connect to remote nodes
    - Distributing SSH keys as needed

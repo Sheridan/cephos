@@ -5,7 +5,7 @@ The `cephos-cephfs-volumes` script displays information about CephFS subvolume g
 
 ## Functionality
 1. Lists all subvolume groups in the CephFS filesystem
-2. For each subvolume group, displays:
+1. For each subvolume group, displays:
    - Group name
    - Total bytes used by the group
    - All subvolumes within the group with their paths and usage

@@ -7,7 +7,7 @@
 
 read -r -d '' help_text <<EOF
 Usage: $0 [-hv]
-Update configurations for each cluster node
+Shutdown whole cluster
 
 Options:
   -h  Show this help message and exit
@@ -15,19 +15,17 @@ Options:
 EOF
 set -euo pipefail
 # --- functions ---
-function update_nodes()
+function shutdown_nodes()
 {
-  log_info "Sync cluster nodes configuration"
+  log_info "Shutdown all other nodes..."
   mapfile -t ceph_hosts < <(get_ceph_hosts)
   for line in "${ceph_hosts[@]}"
   do
     read -r node_name public_ip cluster_ip <<< "${line}"
-    if [[ "${node_name}" == "$(hostname -s)" ]]
+    if [[ "${node_name}" != "$(hostname -s)" ]]
     then
-      cephos-conf-reconcile $(verbose_flag)
-    else
       spread_ssh_key "${user_home}" "${current_user}" "${public_ip}"
-      exec_ssh "${public_ip}" "${current_user}" "cephos-conf-reconcile $(verbose_flag)"
+      exec_ssh "${public_ip}" "${current_user}" "sudo poweroff"
     fi
   done
 }
@@ -47,6 +45,8 @@ done
 # --- options parse ---
 # --- main ---
 check_user "cephos"
-log_info "Synchronizing configurations between cluster nodes..."
+ask_confirmation "This script will shut down all Ceph cluster nodes. Continue?"
 generate_ssh_key "${user_home}" "${current_user}"
-update_nodes
+shutdown_nodes
+log_info "Shutdown self"
+sudo poweroff

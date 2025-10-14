@@ -37,7 +37,7 @@ function restart_shell()
 
   case "${executable_name}" in
     bash) source ~/.bashrc ;;
-     zsh) source ~/.zshrc ;;
+     zsh) source ~/.zshrc  ;;
        *) log_cry "Unknown shell: ${executable_name}" ;;
   esac
 }
@@ -65,15 +65,15 @@ timezone=""
 while getopts ":z:P:C:p:c:n:hv" opt
 do
   case ${opt} in
-    n) fqdn="${OPTARG}" ;;
-    P) public_network="${OPTARG}" ;;
+    n) fqdn="${OPTARG}"            ;;
+    P) public_network="${OPTARG}"  ;;
     C) cluster_network="${OPTARG}" ;;
-    p) public_ip="${OPTARG}" ;;
-    c) cluster_ip="${OPTARG}" ;;
-    z) timezone="${OPTARG}" ;;
-    h) usage ;;
+    p) public_ip="${OPTARG}"       ;;
+    c) cluster_ip="${OPTARG}"      ;;
+    z) timezone="${OPTARG}"        ;;
+    h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done

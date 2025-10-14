@@ -131,13 +131,13 @@ while getopts ":i:a:m:n:dhv" opt
 do
   case "$opt" in
     i) interface="$OPTARG" ;;
-    a) address="$OPTARG" ;;
-    m) netmask="$OPTARG" ;;
+    a) address="$OPTARG"   ;;
+    m) netmask="$OPTARG"   ;;
     n) new_interface_name="$OPTARG" ;;
-    d) dhcp=1 ;;
+    d) dhcp=1    ;;
     v) verbose=1 ;;
-    h) usage ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+    h) usage     ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"           ;;
     :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
   esac
 done

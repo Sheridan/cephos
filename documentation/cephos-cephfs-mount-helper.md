@@ -20,16 +20,16 @@ cephos-cephfs-mount-helper -u myuser -g mygroup -s mysubvolume -p /mnt/cephfs -o
 
 ## Functionality
 1. Validates required options (username, mountpoint, output file)
-2. Checks if the specified Ceph user exists
-3. Verifies that the subvolume group and subvolume exist
-4. Creates a minimal ceph.conf configuration file
-5. Exports the Ceph user's key and keyring
-6. Generates mount configuration files using templates:
+1. Checks if the specified Ceph user exists
+1. Verifies that the subvolume group and subvolume exist
+1. Creates a minimal ceph.conf configuration file
+1. Exports the Ceph user's key and keyring
+1. Generates mount configuration files using templates:
    - mount.sh script
    - fstab.content
    - systemd mount unit
    - systemd automount unit
-7. Packages all generated files into a tar archive
+1. Packages all generated files into a tar archive
 
 ## Validation
 - Ensures username is specified and not "admin"

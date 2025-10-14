@@ -19,14 +19,25 @@ function get_local_mds_gid()
 {
   ${sudo_ceph} ceph fs dump -f json | jq "[.filesystems[].mdsmap.info[], .standbys[]] | flatten | map(select(.name==\"${mds_id}\")) | .[].gid"
 }
+function force_flag()
+{
+  if (( force ))
+  then
+    echo "-f"
+  else
+    echo " "
+  fi
+}
 # --- functions ---
 # --- options parse ---
-while getopts ":hv" opt
+force=0
+while getopts ":fhv" opt
 do
   case ${opt} in
-    h) usage ;;
+    f) force=1   ;;
+    h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done
@@ -38,7 +49,7 @@ ask_confirmation "This operation will remove all local disks from the cluster an
 
 while read -r block_device
 do
-  echo "y" | cephos-disk-remove $(verbose_flag) -d "${block_device}"
+  echo "y" | cephos-disk-remove $(verbose_flag) -d "${block_device}" $(force_flag)
 done < <(get_local_osd_disks)
 
 log_info "Removing mds '${mds_id}'"

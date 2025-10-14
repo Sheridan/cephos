@@ -22,9 +22,9 @@ while getopts ":n:hv" opt
 do
   case ${opt} in
     n) cluster_node="${OPTARG}" ;;
-    h) usage ;;
+    h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done

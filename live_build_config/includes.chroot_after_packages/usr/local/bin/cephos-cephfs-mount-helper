@@ -89,14 +89,14 @@ output_file=""
 while getopts ":o:p:g:s:u:hv" opt
 do
   case ${opt} in
-    g) grp_name="${OPTARG}" ;;
-    s) vol_name="${OPTARG}" ;;
-    u) username="${OPTARG}" ;;
-    p) mountpoint="${OPTARG}" ;;
+    g) grp_name="${OPTARG}"    ;;
+    s) vol_name="${OPTARG}"    ;;
+    u) username="${OPTARG}"    ;;
+    p) mountpoint="${OPTARG}"  ;;
     o) output_file="${OPTARG}" ;;
-    h) usage ;;
+    h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
     :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
   esac
 done

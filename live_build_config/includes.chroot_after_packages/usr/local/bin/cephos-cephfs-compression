@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/cephfs.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -m mode -a algorithm -r ratio [-hv]
+CephFS volumes compression manager
+
+Options:
+  -m <mode>            Compression mode (default 'none')
+  -a <algorithm>       Compression algorithm (default 'snappy')
+  -r <ratio>           Compression required ratio (default '0.875')
+  -h                   Show this help message and exit
+  -v                   Enable verbose mode
+
+EOF
+
+set -euo pipefail
+# --- functions ---
+function usage_values()
+{
+  echo "Values:"
+  echo "  Compression modes: $(compression_modes | xargs)"
+  echo "  Compression algorithms: $(compression_algorithms | xargs)"
+}
+
+function compression_values()
+{
+  local option="${1}"
+  local osdid
+  osdid=$(osd_any_id)
+  ${sudo_ceph} ceph tell osd.${osdid} config help bluestore_compression_${option} | jq -r '.option.enum_values[]'
+}
+
+function compression_modes()
+{
+  compression_values "mode"
+}
+
+function compression_algorithms()
+{
+  compression_values "algorithm"
+}
+# --- functions ---
+# --- options parse ---
+compression_algorithm="snappy"
+compression_mode="none"
+required_ratio="0.875"
+output_file=""
+while getopts ":r:a:m:hv" opt
+do
+  case ${opt} in
+    m) compression_mode="${OPTARG}"      ;;
+    a) compression_algorithm="${OPTARG}" ;;
+    r) required_ratio="${OPTARG}"        ;;
+    h) usage "$(usage_values)"           ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+data_pool="${cephfs_name}_data"
+# --- options parse ---
+
+# --- main ---
+check_user "cephos"
+
+if ! compression_modes | grep -qxF "${compression_mode}"
+then
+  wrong_opt "Unknown compression mode ${compression_mode}"
+fi
+
+if ! compression_algorithms | grep -qxF "${compression_algorithm}"
+then
+  wrong_opt "Unknown compression algorithm ${compression_algorithm}"
+fi
+
+if ! is_float "${required_ratio}"
+then
+  wrong_opt "Compression required ratio must be float"
+fi
+
+log_verbose "Apply compression algorithm ${compression_algorithm}"
+${sudo_ceph} ceph osd pool set ${data_pool} compression_algorithm ${compression_algorithm}
+
+log_verbose "Apply compression mode ${compression_mode}"
+${sudo_ceph} ceph osd pool set ${data_pool} compression_mode ${compression_mode}
+
+log_verbose "Apply compression ratio ${required_ratio}"
+${sudo_ceph} ceph osd pool set ${data_pool} compression_required_ratio ${required_ratio}

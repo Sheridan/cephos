@@ -8,8 +8,7 @@ function check_hostname()
   fi
   if [[ "$(hostname -s)" == "${build_hostname}" ]]
   then
-    log_err "Change hostname please"
-    exit 1
+    log_cry "Change hostname please"
   fi
 }
 
@@ -162,7 +161,7 @@ function osd_id_list()
 
 function osd_any_id()
 {
-  pgrep -a ceph-osd | awk '{for (i=1;i<=NF;i++) if ($i=="--id") print $(i+1)}'
+  pgrep -a ceph-osd | awk '{for (i=1;i<=NF;i++) if ($i=="--id") print $(i+1)}' | tail -n 1
 }
 
 function prepare_ceph_data()

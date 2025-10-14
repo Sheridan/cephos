@@ -13,6 +13,17 @@ Options:
 EOF
 set -euo pipefail
 # --- functions ---
+function clocks_skew()
+{
+  log_delimiter
+  log_info "Cluster nodes clocks skew"
+  ${sudo_ceph} ceph tell mon time-sync-status -f json | jq -r '
+  .time_skew_status
+  | to_entries[]
+  | "\(.key)\n  latency: \(.value.latency)\n  skew: \(.value.skew)"
+  '
+}
+
 function show()
 {
   local title="$1"
@@ -30,9 +41,9 @@ function show()
 while getopts ":hv" opt
 do
   case ${opt} in
-    h) usage ;;
+    h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"           ;;
     :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
   esac
 done
@@ -40,19 +51,25 @@ done
 # --- main ---
 check_user "cephos"
 
-show "Time synchronization sources"  "chronyc sources"   1
-show "Time synchronization tracking" "chronyc tracking"  1
-show "Time synchronization activity" "chronyc activity"  1
+show "Time synchronization sources"  "chronyc sources"             1
+show "Time synchronization tracking" "chronyc tracking"            1
+show "Time synchronization activity" "chronyc activity"            1
 
-show "Cluster health details"     "ceph health detail"   0
-show "Disk usage"                 "ceph df detail"       0
-show "OSD status"                 "ceph osd status"      0
-show "OSD utilization"            "ceph osd utilization" 0
-show "OSD tree structure"         "ceph osd tree"        0
-show "OSD disk usage tree"        "ceph osd df tree"     0
-show "OSD performance metrics"    "ceph osd perf"        0
-show "Pool statistics"            "ceph osd pool stats"  0
-show "Placement Group statistics" "ceph pg stat"         0
-show "Monitor statistics"         "ceph mon stat"        0
-show "CephFS filesystem status"   "ceph fs status"       0
-show "Cluster summary"            "ceph -s"              0
+clocks_skew
+
+show "Cluster health details"     "ceph health detail"             0
+show "Ceph LVM volumes"           "ceph-volume lvm list"           0
+show "Disk usage"                 "ceph df detail"                 0
+show "OSD status"                 "ceph osd status"                0
+show "OSD stats"                  "ceph osd stat"                  0
+show "OSD utilization"            "ceph osd utilization"           0
+show "OSD tree structure"         "ceph osd tree"                  0
+show "OSD disk usage tree"        "ceph osd df tree"               0
+show "OSD performance metrics"    "ceph osd perf"                  0
+show "OSD auto scaling"           "ceph osd pool autoscale-status" 0
+show "Pool statistics"            "ceph osd pool stats"            0
+show "Placement Group statistics" "ceph pg stat"                   0
+show "Placement Group summary"    "ceph pg dump summary"           0
+show "Monitor statistics"         "ceph mon stat"                  0
+show "CephFS filesystem status"   "ceph fs status"                 0
+show "Cluster summary"            "ceph -s"                        0

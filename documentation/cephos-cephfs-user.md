@@ -27,8 +27,8 @@ cephos-cephfs-user -D -u myuser
 
 ## Functionality
 1. Validates required options (action, username)
-2. Checks if the specified subvolume group and subvolume exist (for add/del actions)
-3. Performs the specified action:
+1. Checks if the specified subvolume group and subvolume exist (for add/del actions)
+1. Performs the specified action:
    - `add`: Adds or updates user caps for the specified subvolume
    - `del`: Deletes user caps and removes the user if no caps remain
    - `DEL`: Deletes the user completely from the cluster
