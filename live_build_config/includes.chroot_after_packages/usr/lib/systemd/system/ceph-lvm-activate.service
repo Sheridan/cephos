@@ -1,0 +1,15 @@
+[Unit]
+Description=Activate Ceph LVM volume groups before starting any Ceph daemons
+DefaultDependencies=no
+
+After=local-fs.target lvm2-monitor.service
+Before=ceph.target
+Wants=lvm2-monitor.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ceph-lvm-activate.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

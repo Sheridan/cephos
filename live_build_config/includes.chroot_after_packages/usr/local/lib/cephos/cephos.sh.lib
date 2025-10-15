@@ -164,6 +164,12 @@ function osd_any_id()
   pgrep -a ceph-osd | awk '{for (i=1;i<=NF;i++) if ($i=="--id") print $(i+1)}' | tail -n 1
 }
 
+function activate_lvm_prescan()
+{
+  log_verbose "Enabling ceph-lvm-activate.service"
+  sudo systemctl enable ceph-lvm-activate.service
+}
+
 function prepare_ceph_data()
 {
   log_verbose "Preparing data"

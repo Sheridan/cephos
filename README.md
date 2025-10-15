@@ -37,9 +37,8 @@ The script will create at least one persistence partition. The size of this part
 Attention! The usual warning: back up the data from your flash drive first, otherwise it will be lost :)
 
 ## Recommendations
-1. Do not use direct paths to block devices (e.g., `/dev/sda`); instead, use links from `/dev/disk/by-id/`.
 1. It is highly advisable to provide the storage with an uninterrupted power supply. In case of a power failure, shut down the cluster (`cephos-shutdown-cluster`).
-1. After a reboot, the cluster may take a long time to recover—often more than an hour. This is normal.
+1. After a reboot, the cluster may take a long time to recover—often. This is normal.
 1. Avoid naming hosts with numerals (e.g., `cepos-1`, `cephos-ten`). Use names such as country names, stars, etc. CephOS creates a cluster of identical peer servers, and the naming convention will be reflected in the path.
 1. It is highly recommended to have two network interfaces on each host. Assign the faster interfaces to the Ceph service network (`ceph_0`).
 
@@ -140,6 +139,11 @@ Run script `cephos-conf-sync` on any Ceph node to synchronize sensitive data bet
    - mount.sh command
    - fstab entries
    - systemd.mount/systemd.automount units
+
+# Project build
+1. Docker and the Docker Compose plugin must be installed.
+1. Run `make build`.
+1. After the build, the installer will appear in `tmp/work/`: `tmp/work/cephos_installer.run`.
 
 # Defaults
 ## linux

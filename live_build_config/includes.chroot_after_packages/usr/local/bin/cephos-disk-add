@@ -71,5 +71,6 @@ ${sudo_ceph} ceph-volume \
   --data "${block_device}" \
   --objectstore bluestore
 set_fs_permissions
+activate_lvm_prescan
 
 log_info "OSD successfully created on ${block_device}"

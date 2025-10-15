@@ -82,8 +82,8 @@ cephos-init-host -v -n cephos-mirzamon.sheridan-home.local -z "Europe/Moscow" -P
 cephos-force-timesync -v -s 10.0.0.1
 cephos-add-timeserver -v -s 10.0.0.1 -p ru.pool.ntp.org
 cephos-init-cluster -v
-ls -la /dev/disk/by-id
-cephos-disk-add -v -d /dev/disk/by-id/
+cephos-disk-add -v -d /dev/disk/by-id/ata-ST2000VX000-1CU164_W1E8FT7Q
+cephos-disk-add -v -d /dev/disk/by-id/ata-ST2000DM006-2DM164_Z4Z7J05N
 cephos-init-cephfs -v
 cephos-init-metrics -v
 ```
@@ -96,8 +96,8 @@ cephos-setup-interface -i enp1s0 -m 255.255.255.0 -a 172.16.16.2 -n ceph_0
 cephos-init-host -v -n cephos-alpherat.sheridan-home.local -z "Europe/Moscow" -P 10.0.0.0/8 -C 172.16.16.0/24 -p 10.0.1.25 -c 172.16.16.2
 cephos-force-timesync -v -s 10.0.0.1
 cephos-connect-to-cluster -v -n 10.0.1.24
-ls -la /dev/disk/by-id
-cephos-disk-add -v -d /dev/disk/by-id/
+cephos-disk-add -v -d /dev/disk/by-id/ata-ST2000DM001-1CH164_W1E6JGT2
+cephos-disk-add -v -d /dev/disk/by-id/ata-ST2000VX000-1CU164_Z1E2J076
 cephos-init-mds -v
 cephos-init-metrics -v
 ```
@@ -109,8 +109,8 @@ cephos-setup-interface -i enp1s0 -m 255.255.255.0 -a 172.16.16.3 -n ceph_0
 cephos-init-host -v -n cephos-zubenelh.sheridan-home.local -z "Europe/Moscow" -P 10.0.0.0/8 -C 172.16.16.0/24 -p 10.0.1.26 -c 172.16.16.3
 cephos-force-timesync -v -s 10.0.0.1
 cephos-connect-to-cluster -v -n 10.0.1.25
-ls -la /dev/disk/by-id
-cephos-disk-add -v -d /dev/disk/by-id/
+cephos-disk-add -v -d /dev/disk/by-id/ata-ST2000DM001-1ER164_Z4Z3NC3E
+cephos-disk-add -v -d /dev/disk/by-id/ata-ST2000DM001-1CH164_W1E6HS6T
 cephos-init-mds -v
 cephos-init-metrics -v
 ```

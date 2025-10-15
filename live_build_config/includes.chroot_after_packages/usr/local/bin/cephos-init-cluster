@@ -83,6 +83,8 @@ ceph_conf_set "osd" "osd_scrub_sleep_hdd"                      "0.2"
 ceph_conf_set "osd" "osd_scrub_sleep"                          "0.05"
 ceph_conf_set "osd" "osd_use_stale_snap"                       "false"
 
+ceph_conf_set "osd" "osd_op_complaint_time"                    "64"
+
 ceph_conf_set "global" "auth_client_required"  "cephx"
 ceph_conf_set "global" "auth_cluster_required" "cephx"
 ceph_conf_set "global" "auth_service_required" "cephx"

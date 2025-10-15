@@ -7,7 +7,8 @@ Wants=network-online.target
 What=${ceph_hosts}:${cephfs_path}
 Where=${mountpoint}
 Type=ceph
-Options=name=${username},secretfile=/etc/ceph/${username}.secret,fs=${cephfs_name},_netdev
+Options=name=${username},secretfile=/etc/ceph/${username}.secret,fs=${cephfs_name},_netdev,noatime
+TimeoutSec=0
 
 [Install]
 WantedBy=multi-user.target

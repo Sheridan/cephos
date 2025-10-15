@@ -43,13 +43,13 @@ then
   set_fs_permissions
 
   manage_service_state "enable" "ceph-mgr@${mgr_id}"
-  sleep 8
 
+  sleep 8
   log_info "Configuration"
   mgr_module_enable dashboard
   mgr_module_enable stats
-  sleep 8
 
+  sleep 8
   ceph_config_set "mgr" "mgr/dashboard/server_port"                      "8080"
   ceph_config_set "mgr" "mgr/dashboard/ssl"                              "false"
   ceph_config_set "mon" "mon_warn_on_insecure_global_id_reclaim_allowed" "false"
@@ -57,6 +57,7 @@ then
   if ! dashboard_user_exists "cephos"
   then
     log_info "Creating user 'cephos' with password 'P@ssw0rd'"
+    sleep 8
     cephos-dashboard-user $(verbose_flag) -p 'P@ssw0rd'
   fi
 else

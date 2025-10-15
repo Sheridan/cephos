@@ -147,6 +147,7 @@ process_template "mount"             "${temp_dir}" "mount.sh"                   
 process_template "fstab"             "${temp_dir}" "fstab.content"                      "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
 process_template "systemd-mount"     "${temp_dir}" "${systemd_unit_filename}.mount"     "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
 process_template "systemd-automount" "${temp_dir}" "${systemd_unit_filename}.automount" "${username}" "${sv_path}" "${mountpoint}" "${ceph_hosts}"
+chmod 0755 "${temp_dir}/mount.sh"
 
 log_info "Pack result to ${output_file}"
 archive_directory "${temp_dir}" "${output_file}"
