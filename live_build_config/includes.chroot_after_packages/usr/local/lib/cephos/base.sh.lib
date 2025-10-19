@@ -6,14 +6,28 @@ clr_warn="\e[1;33m"
 clr_err="\e[1;31m"
 clr_verb="\e[1;36m"
 verbose=0
+use_logfile=1
 build_hostname="cephos"
+
+function log_file()
+{
+  local log_level="$1"
+  local log_text="$2"
+  if (( use_logfile ))
+  then
+    echo "[$(date "+%Y-%m-%d %H:%M:%S")] [$(basename "${0}")] [${log_level}] ${log_text}" | sudo tee -a /var/log/cephos.log &>/dev/null
+  fi
+}
 
 function log_message()
 {
   local log_level="$1"
   local log_color="$2"
   local log_text="$3"
+
   echo -e "[${log_color}${log_level}${clr_reset}] ${log_text}"
+
+  log_file "${log_level}" "${log_text}"
 }
 
 function log_verbose()
@@ -22,6 +36,8 @@ function log_verbose()
   if (( verbose ))
   then
     log_message "V" "${clr_verb}" "${message}"
+  else
+    log_file "v" "${message}"
   fi
 }
 
@@ -110,49 +126,20 @@ function check_user()
   fi
 }
 
-function manage_service_state()
+function manage_systemd_unit_state()
+{
+  local state="$1"
+  local unit="$2"
+  log_verbose "Change '${unit}' state to '${state}'"
+  sudo systemctl ${state} ${unit}
+}
+
+function manage_systemd_service_state()
 {
   local state="$1"
   local service="$2"
-  log_verbose "Change service '${service}' satate to '${state}'"
+  log_verbose "Change service '${service}' state to '${state}'"
   sudo systemctl ${state} --now ${service}.service
-}
-
-function ensure_symlink_correct()
-{
-  local target_dir="$1"
-  local symlink_path="$2"
-  local current_target=""
-
-  if [[ ! -d "${target_dir}" ]]
-  then
-    log_cry "Directory '${target_dir}' does not exist"
-  fi
-
-  if [[ -L "${symlink_path}" ]]
-  then
-    local resolved_target
-
-    current_target="$(readlink -f "${symlink_path}")"
-    resolved_target="$(readlink -f "${target_dir}")"
-
-    if [[ "${current_target}" == "${resolved_target}" ]]
-    then
-      log_verbose "Symlink '${symlink_path}' -> '${current_target}' exists"
-      return 0
-    else
-      log_wrn "Symlink '${symlink_path}' is targeting '${current_target}', recreating..."
-      sudo rm -f "${symlink_path}" || { log_cry "Cannot delete current symlink '${symlink_path}'"; }
-    fi
-  elif [[ -e "${symlink_path}" ]]
-  then
-    log_wrn "'${symlink_path}' exists, but is not a symlink. Remake..."
-    sudo rm -rf "${symlink_path}" || { log_cry "Cannot delete '${symlink_path}'"; }
-  else
-    log_verbose "'${symlink_path}' does not exist, let's create it"
-  fi
-
-  sudo ln -s "${target_dir}" "${symlink_path}" || { log_cry "Cannot create symlink '${symlink_path}'."; }
 }
 
 function is_float()

@@ -60,5 +60,5 @@ then
   append_to_chrony "pool" "${time_pool}"
 fi
 
-manage_service_state "enable" "chrony"
+manage_systemd_service_state "enable" "chrony"
 sudo timedatectl set-ntp yes

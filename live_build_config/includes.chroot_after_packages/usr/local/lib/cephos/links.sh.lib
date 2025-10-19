@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+
+cephos_root="/cephos"
+is_new_cephos_version=0
+is_fresh_cephos_image=0
+
+function check_cephos_is_new_version()
+{
+
+  local cephos_tag_file="/etc/cephos_build_date"
+  local cephos_saved_tag_file="${cephos_root}${cephos_tag_file}"
+  local current_tag saved_tag current_tag_mtime saved_tag_mtime
+
+  sudo mkdir -p "$(dirname "${cephos_saved_tag_file}")"
+
+  if [[ -f "${cephos_tag_file}" ]]
+  then
+    current_tag=$(cat "${cephos_tag_file}")
+    if [[ -f "${cephos_saved_tag_file}" ]]
+    then
+      saved_tag=$(cat "${cephos_saved_tag_file}")
+      if [[ "${current_tag}" != "${saved_tag}" ]]
+      then
+        log_info "New CephOS build detected: '${current_tag}' != '${saved_tag}'"
+        sudo cp -a "${current_tag}" "${cephos_saved_tag_file}"
+        is_new_cephos_version=1
+      else
+        log_info "Loaded same CephOS build"
+        current_tag_mtime=$(stat -c %Y "${cephos_tag_file}")
+        saved_tag_mtime=$(stat -c %Y "${cephos_saved_tag_file}")
+        if (( current_tag_mtime > saved_tag_mtime ))
+        then
+          log_info "Loaded CephOS more fresh than previous"
+          is_fresh_cephos_image=1
+        fi
+      fi
+    else
+      log_info "First time CephOS booting"
+      sudo cp -a "${current_tag}" "${cephos_saved_tag_file}"
+    fi
+  fi
+}
+
+function ensure_symlink_correct()
+{
+  local target_file="$1"
+  local source_file="$2"
+  local current_target=""
+  local target_mtime source_mtime
+
+  log_info "[link] ${source_file} -> ${target_file}"
+
+  if [[ ! -f "${source_file}" && -e "${target_file}" && ! -L "${target_file}" ]]
+  then
+    log_wrn "[link] Source file '${source_file}' missing, but target '${target_file}' exists."
+    log_info "[link] Moving '${target_file}' to '${source_file}'..."
+    mkdir -p "$(dirname "${source_file}")" || { log_err "[link] Failed to create parent dir for ${source_file}."; return 1; }
+    mv "${target_file}" "${source_file}" || { log_err "[link] Failed to move '${target_file}' to '${source_file}'."; return 1; }
+  fi
+
+  if [[ ! -f "${source_file}" ]]
+  then
+    log_err "[link] Source file '${source_file}' does not exist."
+    return 1
+  fi
+
+  if [[ -e "${target_file}" && ! -L "${target_file}" ]]
+  then
+    target_mtime=$(stat -c %Y "${target_file}")
+    source_mtime=$(stat -c %Y "${source_file}")
+
+    if (( target_mtime > source_mtime ))
+    then
+      if (( is_new_cephos_version || is_fresh_cephos_image ))
+      then
+        log_info "Is fresh CephOS. Do not copy file back to /cephos"
+      else
+        log_wrn "[link] Target file '${target_file}' is newer than source '${source_file}'. Replacing source with target."
+        mv -f "${target_file}" "${source_file}" || { log_err "[link] Failed to replace source file '${source_file}' with target '${target_file}'"; return 1; }
+      fi
+    fi
+  fi
+
+  if [[ -L "${target_file}" ]]
+  then
+    local resolved_target
+    current_target="$(readlink -f "${target_file}")"
+    resolved_target="$(readlink -f "${source_file}")"
+    if [[ "${current_target}" == "${resolved_target}" ]]
+    then
+      log_info "[link] Symlink '${target_file}' is already correct -> '${current_target}'."
+      return 0
+    else
+      log_wrn "[link] Symlink '${target_file}' points to '${current_target}', recreating..."
+      rm -f "${target_file}" || { log_err "[link] Failed to remove existing symlink '${target_file}'."; return 1; }
+    fi
+  elif [[ -e "${target_file}" ]]
+  then
+    log_info "[link] '${target_file}' exists but is not a symlink. Removing..."
+    rm -rf "${target_file}" || { log_err "[link] Failed to remove '${target_file}'."; return 1; }
+  else
+    log_info "[link] '${target_file}' does not exist. Will create a new symlink..."
+  fi
+
+  log_info "[link] Creating symlink '${target_file}' -> '${source_file}'."
+  ln -s "${source_file}" "${target_file}" || { log_err "[link] Could not create symlink '${target_file}'."; return 1; }
+  return 0
+}
+
+function ensure_bind_mount_correct()
+{
+  local target_dir="$1"
+  local source_dir="$2"
+  log_info "[bind] ${source_dir} -> ${target_dir}"
+
+  mkdir -p "${target_dir}" || { log_err "[bind] Failed to create target '${target_dir}'."; return 1; }
+  mkdir -p "${source_dir}" || { log_err "[bind] Failed to create source '${source_dir}'."; return 1; }
+
+  if [[ -z "$(ls -A "${source_dir}" 2>/dev/null)" && "$(ls -A "${target_dir}" 2>/dev/null)" ]]
+  then
+    log_info "[bind] Populating '${source_dir}' from existing content in '${target_dir}'..."
+    cp -a "${target_dir}/." "${source_dir}/" || { log_err "[bind] Failed to copy files from '${target_dir}' to '${source_dir}'."; return 1; }
+  fi
+
+  if mountpoint -q "${target_dir}"
+  then
+    local current_source
+    current_source="$(findmnt -no SOURCE "${target_dir}")"
+    if [[ "${current_source}" == "${source_dir}" ]]
+    then
+      log_info "[bind] '${target_dir}' is already bind-mounted from '${source_dir}'."
+      return 0
+    else
+      log_info "[bind] '${target_dir}' mounted from '${current_source}', remounting..."
+      umount "${target_dir}" || { log_err "[bind] Failed to unmount '${target_dir}'."; return 1; }
+    fi
+  fi
+
+  if [[ "$(ls -A "${target_dir}" 2>/dev/null)" ]]
+  then
+    log_info "[bind] Warning: '${target_dir}' is not empty. Its contents will be hidden after bind mount."
+  fi
+
+  if [[ -d "${source_dir}" ]]
+  then
+    log_info "[bind] Mounting '${source_dir}' -> '${target_dir}' (bind)..."
+    mount --bind "${source_dir}" "${target_dir}" || { log_err "[bind] Failed to perform bind mount '${source_dir}' -> '${target_dir}'."; return 1; }
+  else
+    log_info "[bind] Source directory '${source_dir}' does not exist."
+    return 1
+  fi
+  log_info "[bind] Successfully mounted '${source_dir}' -> '${target_dir}'."
+  return 0
+}

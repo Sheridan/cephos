@@ -29,16 +29,16 @@ done
 check_user "cephos"
 
 log_info "Node exporter metrics port: 9100"
-manage_service_state "enable" "prometheus-node-exporter"
+manage_systemd_service_state "enable" "prometheus-node-exporter"
 
 log_info "Telegraf port: 9102"
-manage_service_state "enable" "telegraf"
+manage_systemd_service_state "enable" "telegraf"
 
 log_info "Smartctl exporter metrics port: 9104"
-manage_service_state "enable" "smartctl-exporter"
+manage_systemd_service_state "enable" "smartctl-exporter"
 
 log_info "Ceph exporter port: 9106"
-manage_service_state "enable" "ceph-exporter"
+manage_systemd_service_state "enable" "ceph-exporter"
 
 log_info "Ceph internal metrics port: 9108"
 mgr_module_enable prometheus

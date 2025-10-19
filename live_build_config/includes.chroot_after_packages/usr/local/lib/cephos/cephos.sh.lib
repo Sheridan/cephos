@@ -33,22 +33,17 @@ function ceph_crash_up()
 {
   sudo mkdir -p "${ceph_data_dir}/crash/posted"
   set_fs_permissions
-  manage_service_state "enable" "ceph-crash"
+  manage_systemd_service_state "enable" "ceph-crash"
 }
 
 function create_directories()
 {
   log_verbose "Creating directories"
-  sudo mkdir -p ${ceph_conf_dir}
   sudo mkdir -p ${ceph_data_dir}/bootstrap-mon \
                 ${ceph_data_dir}/bootstrap-mds \
                 ${ceph_data_dir}/bootstrap-mgr \
                 ${ceph_data_dir}/bootstrap-osd \
                 ${ceph_data_dir}/bootstrap-rgw
-
-  ensure_symlink_correct "${ceph_conf_dir}" "/etc/ceph"
-  ensure_symlink_correct "${ceph_data_dir}" "/var/lib/ceph"
-
   set_fs_permissions
 }
 
@@ -174,13 +169,12 @@ function prepare_ceph_data()
 {
   log_verbose "Preparing data"
   check_hostname
-  cephos_root="/cephos"
-  cephos_conf="${cephos_root}/cephos"
 
-  ceph_root="${cephos_root}/ceph"
-  ceph_conf_dir="${ceph_root}/conf"
-  ceph_data_dir="${ceph_root}/data"
+  cephos_data_dir="/var/lib/cephos"
+  ceph_conf_dir="/etc/ceph"
+  ceph_data_dir="/var/lib/ceph"
   ceph_main_conf="${ceph_conf_dir}/ceph.conf"
+
   ceph_fsid=$(get_cluster_environment "fsid" "none")
 
   cephfs_name="storage"

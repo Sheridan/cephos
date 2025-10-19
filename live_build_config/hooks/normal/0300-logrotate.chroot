@@ -1,5 +1,8 @@
 #!/bin/bash
 
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
 set -e
 
-systemctl enable logrotate.timer
+manage_systemd_unit_state "enable" "logrotate.timer"

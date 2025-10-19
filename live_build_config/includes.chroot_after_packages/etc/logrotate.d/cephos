@@ -1,0 +1,8 @@
+/var/log/cephos.log {
+  rotate 7
+  daily
+  minsize 1M
+  compress
+  missingok
+  notifempty
+}

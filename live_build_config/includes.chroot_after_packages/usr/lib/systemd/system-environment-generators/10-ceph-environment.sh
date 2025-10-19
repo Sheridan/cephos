@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/base.sh.lib; use_logfile=0
 . /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 

@@ -87,6 +87,7 @@ function publish_info()
 	echo "$(get_branch_name)"                 > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_version
 	echo "https://github.com/Sheridan/cephos" > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_repository
 	echo "https://t.me/ceph_os"               > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_telegram
+  echo "$(date --utc)"                      > ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_build_date
 }
 
 function generate_motd()
@@ -129,7 +130,7 @@ function configure()
         --architecture amd64 \
         --archive-areas "main contrib non-free non-free-firmware" \
         --binary-images hdd \
-        --bootappend-live "boot=live components hostname=cephos username=cephos noautologin persistence debugfs=off" \
+        --bootappend-live "boot=live components hostname=cephos username=cephos noautologin persistence debugfs=off init=/usr/local/sbin/cephos-init" \
         --chroot-squashfs-compression-type lz4 \
         --compression lzip \
         --debian-installer none \

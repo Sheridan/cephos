@@ -1,22 +1,22 @@
 #!/bin/bash
 
 . live_build_config/includes.chroot_after_packages/usr/local/lib/cephos/base.sh.lib
+use_logfile=0
 
 ssh_options="-o StrictHostKeyChecking=no"
-max_vm_wait_seconds=300
+max_vm_wait_seconds=1800
 check_interval=2
 
 vm_hosts=(cf cs ct)
 
 declare -A vm_ssh_ports
-declare -A vm_ip_index
-
 vm_ssh_ports=(
     [cf]="2200"
     [cs]="2201"
     [ct]="2202"
 )
 
+declare -A vm_ip_index
 vm_ip_index=(
     [cf]="10"
     [cs]="11"
@@ -43,7 +43,7 @@ function wait_vm()
   start_time=$(date +%s)
   while true
   do
-    if ssh ${ssh_options} -o BatchMode=yes -o ConnectTimeout=3 -p ${vm_ssh_ports[$vm]} cephos@127.0.0.1 "echo ok" &>/dev/null
+    if ssh ${ssh_options} -o BatchMode=yes -o ConnectTimeout=16 -p ${vm_ssh_ports[$vm]} cephos@127.0.0.1 "echo ok" &>/dev/null
     then
       log_info "VM $vm is available via SSH."
       break
@@ -95,6 +95,7 @@ log_info "Initializing networks..."
 for vm in "${vm_hosts[@]}"
 do
   ssh-keygen -R "[127.0.0.1]:${vm_ssh_ports[$vm]}"
+  # wait_vm "${vm}"
   sshpass -p 'cephos' ssh-copy-id ${ssh_options} -p ${vm_ssh_ports[$vm]} cephos@127.0.0.1 &>/dev/null
   exec_ssh "${vm}" "echo 'n' | cephos-setup-interface -i ens4 -m 255.255.255.0 -a 192.168.0.${vm_ip_index[$vm]} -n public_0"
   exec_ssh "${vm}" "echo 'y' | cephos-setup-interface -i ens5 -m 255.255.255.0 -a 192.168.1.${vm_ip_index[$vm]} -n ceph_0"

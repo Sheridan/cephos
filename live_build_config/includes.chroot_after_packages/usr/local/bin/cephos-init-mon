@@ -67,7 +67,7 @@ then
     --conf "${ceph_main_conf}"
   set_fs_permissions
 
-  manage_service_state "enable" "ceph-mon@${mon_id}"
+  manage_systemd_service_state "enable" "ceph-mon@${mon_id}"
 
 else
   log_verbose "MON already exists on this host"

@@ -1,0 +1,8 @@
+/etc/ceph
+/etc/chrony/sources.d
+/etc/lvm
+/etc/network/interfaces.d
+/etc/systemd/system
+/etc/udev/rules.d
+/var/lib/ceph
+/var/lib/cephos

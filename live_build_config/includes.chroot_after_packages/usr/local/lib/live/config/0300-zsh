@@ -14,13 +14,14 @@ function install_omzsh()
   chsh -s /bin/zsh ${user_name}
 }
 
-flag_file="/var/lib/live/config/omzsh"
+flag_file="/var/lib/live/cephos/omzsh"
 if [ ! -f $flag_file ]
 then
   if curl -s --head --connect-timeout 5 https://github.com >/dev/null
   then
     install_omzsh "root" "/root"
     install_omzsh "cephos" "/home/cephos"
+    mkdir -p $(dirname "${flag_file}")
     touch $flag_file
   fi
 fi

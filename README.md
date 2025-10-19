@@ -38,7 +38,7 @@ Attention! The usual warning: back up the data from your flash drive first, othe
 
 ## Recommendations
 1. It is highly advisable to provide the storage with an uninterrupted power supply. In case of a power failure, shut down the cluster (`cephos-shutdown-cluster`).
-1. After a reboot, the cluster may take a long time to recover—often. This is normal.
+1. After a reboot, the cluster may take a long time to recover. This is normal.
 1. Avoid naming hosts with numerals (e.g., `cepos-1`, `cephos-ten`). Use names such as country names, stars, etc. CephOS creates a cluster of identical peer servers, and the naming convention will be reflected in the path.
 1. It is highly recommended to have two network interfaces on each host. Assign the faster interfaces to the Ceph service network (`ceph_0`).
 
@@ -139,6 +139,19 @@ Run script `cephos-conf-sync` on any Ceph node to synchronize sensitive data bet
    - mount.sh command
    - fstab entries
    - systemd.mount/systemd.automount units
+
+# Special `/cephos` Directory
+This directory was created specifically to be placed on a persistent partition of a fast device.
+
+Files listed [here](live_build_config/includes.chroot_after_packages/usr/local/share/cephos/init/files) and directories listed [here](live_build_config/includes.chroot_after_packages/usr/local/share/cephos/init/directories) are moved into this directory. A symlink is created to the original file location, and a `mount --bind` is created for the original directory location.
+
+If this directory resides on a separate fast device, it serves two functions:
+
+## Fast Data Access
+The directory contains `/var/lib/ceph` with Ceph data. While OSDs store their metadata on their own disks, the MON stores its data here, so fast access is desirable.
+
+## Quick Replacement of the Boot Flash Drive
+All Ceph-related data required for the host are also stored in `/etc/hosts`, `/etc/hostname`, `/etc/systemd/system`, and so on. Ideally, I want to achieve a setup where simply plugging in the boot flash drive and booting the node is enough for it to immediately connect to the Ceph cluster, without the need to run connection scripts.
 
 # Project build
 1. Docker and the Docker Compose plugin must be installed.

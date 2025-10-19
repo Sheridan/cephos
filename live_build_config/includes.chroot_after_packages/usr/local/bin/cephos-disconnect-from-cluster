@@ -54,16 +54,16 @@ done < <(get_local_osd_disks)
 
 log_info "Removing mds '${mds_id}'"
 mds_gid="$(get_local_mds_gid)"
-manage_service_state "disable" "ceph-mds@${mds_id}"
+manage_systemd_service_state "disable" "ceph-mds@${mds_id}"
 ${sudo_ceph} ceph mds fail "${mds_gid}" || true
 ${sudo_ceph} ceph mds rm   "${mds_gid}" || true
 
 log_info "Removing mgr '${mgr_id}'"
-manage_service_state "disable" "ceph-mgr@${mgr_id}"
+manage_systemd_service_state "disable" "ceph-mgr@${mgr_id}"
 ${sudo_ceph} ceph mgr fail "$mgr_id" || true
 
 log_info "Removing mon '${mon_id}'"
-manage_service_state "disable" "ceph-mon@${mon_id}"
+manage_systemd_service_state "disable" "ceph-mon@${mon_id}"
 ${sudo_ceph} ceph mon remove "$mon_id" || true
 
 log_info "Stopping and disabling any Ceph services"
@@ -73,10 +73,10 @@ sudo systemctl disable 'ceph-*.service' || true
 log_info "Removing any Ceph data"
 sudo rm -rf ${ceph_conf_dir}/*
 sudo rm -rf ${ceph_data_dir}/*
-sudo rm -rf ${cephos_conf}/*
+sudo rm -rf ${cephos_data_dir}/*
 
 log_info "Stopping and disabling any monitoring services"
-manage_service_state "disable" "prometheus-node-exporter"
-manage_service_state "disable" "telegraf"
-manage_service_state "disable" "smartctl-exporter"
-manage_service_state "disable" "ceph-exporter"
+manage_systemd_service_state "disable" "prometheus-node-exporter"
+manage_systemd_service_state "disable" "telegraf"
+manage_systemd_service_state "disable" "smartctl-exporter"
+manage_systemd_service_state "disable" "ceph-exporter"

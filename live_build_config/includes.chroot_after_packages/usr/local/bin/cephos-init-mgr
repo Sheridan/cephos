@@ -42,7 +42,7 @@ then
 
   set_fs_permissions
 
-  manage_service_state "enable" "ceph-mgr@${mgr_id}"
+  manage_systemd_service_state "enable" "ceph-mgr@${mgr_id}"
 
   sleep 8
   log_info "Configuration"

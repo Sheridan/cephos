@@ -1,18 +1,25 @@
 #!/bin/bash
 
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
 set -e
 
-for unit in $(systemctl list-unit-files | egrep 'ceph.*service' | awk '{print $1}')
+function systemd_units()
+{
+  {
+    echo "radosgw.service"
+    systemctl list-units
+    systemctl list-unit-files
+  }  | awk '{print $1}' | grep -E '^ceph-.*\.service$' | sort -u
+}
+
+for unit in $(systemd_units)
 do
-  systemctl disable $unit || true
+  manage_systemd_unit_state "disable" "${unit}"
 done
 
-for dr in "/etc/ceph" "/var/lib/ceph"
-do
-  rm -rf ${dr}
-done
-
-for dr in "/var/log/ceph" "/var/run/ceph"
+for dr in "/etc/ceph" "/var/lib/ceph" "/var/log/ceph" "/var/run/ceph"
 do
   rm -rf ${dr}/*
 done

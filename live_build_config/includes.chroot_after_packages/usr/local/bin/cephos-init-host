@@ -52,6 +52,7 @@ function set_timezone()
     fi
     log_info "Setting timezone to ${timezone} via timedatectl..."
     sudo timedatectl set-timezone "${timezone}"
+    echo "${timezone}" | sudo tee /etc/timezone > /dev/null
   fi
 }
 # --- functions ---

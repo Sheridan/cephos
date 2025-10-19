@@ -101,7 +101,7 @@ function set_environment()
   local variable="$1"
   local value="$2"
   local kind="$3"
-  write_to_ini "${cephos_conf}/${kind}.ini" "${kind}" "${variable}" "${value}" ""
+  write_to_ini "${cephos_data_dir}/${kind}.ini" "${kind}" "${variable}" "${value}" ""
 }
 
 function get_environment()
@@ -109,7 +109,7 @@ function get_environment()
   local variable="$1"
   local default="$2"
   local kind="$3"
-  read_from_ini "${cephos_conf}/${kind}.ini" "${kind}" "${variable}" "${default}"
+  read_from_ini "${cephos_data_dir}/${kind}.ini" "${kind}" "${variable}" "${default}"
 }
 # ---=---
 function set_cluster_environment()

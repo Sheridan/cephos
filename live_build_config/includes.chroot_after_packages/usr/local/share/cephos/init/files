@@ -1,0 +1,5 @@
+/etc/fstab
+/etc/hostname
+/etc/hosts
+/etc/machine-id
+/etc/timezone

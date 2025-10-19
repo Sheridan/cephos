@@ -1,11 +1,14 @@
 #!/bin/bash
 
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
 set -e
 
-systemctl disable prometheus-node-exporter.service
-systemctl disable telegraf.service
-systemctl disable ceph-exporter.service
-systemctl disable smartctl-exporter.service
+manage_systemd_unit_state "disable" "prometheus-node-exporter.service"
+manage_systemd_unit_state "disable" "telegraf.service"
+manage_systemd_unit_state "disable" "ceph-exporter.service"
+manage_systemd_unit_state "disable" "smartctl-exporter.service"
 
 rm -rf /var/log/telegraf /etc/init.d/telegraf
 usermod -aG ceph telegraf
