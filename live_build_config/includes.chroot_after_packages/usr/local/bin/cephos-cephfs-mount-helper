@@ -35,7 +35,7 @@ function check_exists_vol()
 
 function process_template()
 {
-  local template_file="/usr/local/share/cephos/templates/${1}.template"
+  local template_file="/usr/local/share/cephos/templates/mount/${1}.template"
   local output_path="$2"
   local output_filename="$3"
   local username="$4"
