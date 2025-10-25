@@ -2,6 +2,7 @@
 
 . /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/ceph.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/ssh.sh.lib
 

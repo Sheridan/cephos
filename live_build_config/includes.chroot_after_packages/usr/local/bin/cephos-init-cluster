@@ -2,6 +2,7 @@
 
 . /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/ceph.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
@@ -52,10 +53,16 @@ ceph_conf_set "global" "osd_pool_default_pg_autoscale_mode" "on"
 
 ceph_conf_set "mon" "mon_lease"                               "8"
 ceph_conf_set "mon" "mon_osd_down_out_interval"               "$((60*30))"
+ceph_conf_set "mon" "mon_memory_autotune"                     "true"
+
+ceph_conf_set "global" "autotune_memory_target_ratio"          "0.6"
+ceph_conf_set "osd" "osd_memory_target_autotune"               "true"
+ceph_conf_set "osd" "osd_memory_cache_resize_interval"         "60"
+ceph_conf_set "osd" "bluestore_cache_autotune"                 "true"
+# ceph_conf_set "osd" "osd_memory_target"                        "2Gi"
 
 ceph_conf_set "osd" "osd_deep_scrub_randomize_ratio"           "0.5"
 ceph_conf_set "osd" "bluestore_block_db_create"                "true"
-ceph_conf_set "osd" "bluestore_cache_autotune"                 "true"
 ceph_conf_set "osd" "bluestore_compression_mode"               "none"
 ceph_conf_set "osd" "bluestore_fsck_on_mount_deep"             "false"
 ceph_conf_set "osd" "bluestore_fsck_on_mount"                  "true"

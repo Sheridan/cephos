@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 -n <ratio> -b <ratio> -f <ratio> [-hv]
+Set cluster fill ratios:
+  nearfull-ratio < backfillfull-ratio < full-ratio
+
+Options:
+  -n <ratio> Set nearfull-ratio (default 0.85)
+  -b <ratio> Set backfillfull-ratio (default 0.9)
+  -f <ratio> set full-ratio (default 0.95)
+  -h         Show this help message and exit
+  -v         Enable verbose mode
+EOF
+set -euo pipefail
+# --- functions ---
+function ratios_check()
+{
+  if (( $(echo "$nearfull_ratio < $backfillfull_ratio && $backfillfull_ratio < $full_ratio" | bc -l) ))
+  then
+    log_verbose "Ratios check ok: [nearfull-ratio:${nearfull_ratio}] < [backfillfull-ratio:${backfillfull_ratio}] < [full-ratio:${full_ratio}]"
+  else
+    wrong_opt "Ratios check failed: [nearfull-ratio:${nearfull_ratio}] < [backfillfull-ratio:${backfillfull_ratio}] < [full-ratio:${full_ratio}]"
+  fi
+}
+# --- functions ---
+# --- options parse ---
+nearfull_ratio="0.85"
+backfillfull_ratio="0.9"
+full_ratio="0.95"
+while getopts ":n:b:f:hv" opt
+do
+  case ${opt} in
+    n) nearfull_ratio="${OPTARG}"     ;;
+    b) backfillfull_ratio="${OPTARG}" ;;
+    f) full_ratio="${OPTARG}"         ;;
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- main ---
+check_user "cephos"
+ratios_check
+log_info "Set ratios to: [nearfull-ratio:${nearfull_ratio}], [backfillfull-ratio:${backfillfull_ratio}], [full-ratio:${full_ratio}]"
+
+${sudo_ceph} ceph osd set-nearfull-ratio     ${nearfull_ratio}
+${sudo_ceph} ceph osd set-backfillfull-ratio ${backfillfull_ratio}
+${sudo_ceph} ceph osd set-full-ratio         ${full_ratio}

@@ -2,6 +2,7 @@
 
 . /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/ceph.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
 
@@ -26,6 +27,7 @@ function get_osd_id()
   local block_device="$1"
   ${sudo_ceph} ceph-volume lvm list "${block_device}" --format json | jq -r '.[keys[0]][0].tags["ceph.osd_id"]' 2>/dev/null || true
 }
+
 # --- functions ---
 # --- options parse ---
 block_device=""
@@ -58,6 +60,11 @@ then
   log_cry "Block device ${block_device} is not in Ceph"
 fi
 
+if ( ! cluster_status_ok ) && (( ! force ))
+then
+  wrong_opt "Cluster state is not 'HEALTH_OK'. Either wait for 'HEALTH_OK', or use the '-f' key."
+fi
+
 print_device_info "${block_device}"
 osd_id=$(get_osd_id "${block_device}")
 if [[ -z "$osd_id" || "$osd_id" == "null" ]]
@@ -65,6 +72,7 @@ then
   log_cry "Unable to determine OSD ID for device ${block_device}."
 fi
 log_info "Detected OSD ID: ${osd_id}"
+log_wrn "Do not delete several disks in parallel! Try not to delete disks while the cluster is actively working."
 ask_confirmation "This operation will remove disk ${block_device} from the cluster and destroy all data on the disk. Continue?"
 
 log_info "Removing disk ${block_device} from MON ${mon_id}"
@@ -90,10 +98,10 @@ then
   log_info "Zapping device ${block_device}..."
   ${sudo_ceph} ceph-volume lvm zap --destroy "${block_device}"
   log_info "Disk ${block_device} is cleaned."
-fi
 
-purge_device "${block_device}"
-log_info "Disk ${block_device} is purged"
+  purge_device "${block_device}"
+  log_info "Disk ${block_device} is purged"
+fi
 
 set_fs_permissions
 

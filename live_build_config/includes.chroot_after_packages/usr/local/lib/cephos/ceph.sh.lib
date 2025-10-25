@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+function ceph_crash_up()
+{
+  sudo mkdir -p "${ceph_data_dir}/crash/posted"
+  set_fs_permissions
+  manage_systemd_service_state "enable" "ceph-crash"
+}
+
+function dashboard_user_exists()
+{
+  local user="$1"
+  ${sudo_ceph} ceph dashboard ac-user-show "$user" &>/dev/null
+}
+
+function get_ceph_hosts()
+{
+  ${sudo_ceph} ceph osd metadata -f json \
+  | jq -r '.[] | {host: .hostname, front: .front_addr, back: .back_addr}
+            | [.host, (.front | capture("v2:(?<ip>[^:]+)") .ip // "-"),
+                      (.back  | capture("v2:(?<ip>[^:]+)") .ip // "-")]
+            | @tsv' \
+  | sort -u
+}
+
+function get_flat_ceph_hosts()
+{
+  get_ceph_hosts | awk '{print $1}' | paste -sd, -
+}
+
+function get_local_osd_disks()
+{
+  ${sudo_ceph} ceph-volume lvm list | grep devices | awk '{print $2}'
+}
+
+function get_cluster_health_status()
+{
+  ${sudo_ceph} ceph -s -f json | jq -r '.health.status'
+}
+
+function cluster_status_ok()
+{
+  local current_status
+  current_status="$(get_cluster_health_status)"
+  log_verbose "Health status: ${current_status}"
+  [[ "${current_status}" == "HEALTH_OK" ]]
+}
+
+function wait_for_cluster_health_ok()
+{
+  log_info "Waiting for HEALTH_OK..."
+  while true
+  do
+    if cluster_status_ok
+    then
+      log_info "HEALTH_OK reached"
+      return 0
+    fi
+    sleep 2
+  done
+}
+
+function disk_already_in_ceph()
+{
+  local device="$1"
+  local realdev
+  realdev=$(realpath "$device" 2>/dev/null)
+
+  local osd_id
+  osd_id=$(${sudo_ceph} ceph-volume lvm list "$realdev" 2>/dev/null | awk '/osd id/ {print $3}' | head -n1)
+
+  [[ -z "$osd_id" ]] && return 1
+
+  local osd_path="/var/lib/ceph/osd/ceph-${osd_id}"
+  if [[ ! -d "$osd_path" ]]
+  then
+    return 1
+  fi
+
+  local osd_device
+  osd_device=$(${sudo_ceph} ceph-volume lvm list ${osd_id} | awk '/devices/ {print $2}'  )
+
+  local osd_realdev
+  osd_realdev=$(realpath "$osd_device" 2>/dev/null)
+
+  if [[ "$realdev" == "$osd_realdev" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function mgr_module_enable()
+{
+  local module_name="$1"
+
+  local enabled
+  enabled=$(${sudo_ceph} ceph mgr module ls --format json 2>/dev/null | jq -r --arg mod "${module_name}" '.enabled_modules[] | select(. == $mod)')
+
+  if [[ "$enabled" == "$module_name" ]]
+  then
+    log_info "Module '${module_name}' is already enabled."
+  else
+    log_info "Enabling module '${module_name}'..."
+    if ${sudo_ceph} ceph mgr module enable "${module_name}" --force
+    then
+      echo "Module '${module_name}' has been successfully enabled"
+    else
+      log_cry "Failed to enable module '${module_name}'"
+    fi
+  fi
+}
+
+function osd_id_list()
+{
+  ${sudo_ceph} ceph osd ls 2>/dev/null
+}
+
+function osd_any_id()
+{
+  pgrep -a ceph-osd | awk '{for (i=1;i<=NF;i++) if ($i=="--id") print $(i+1)}' | tail -n 1
+}

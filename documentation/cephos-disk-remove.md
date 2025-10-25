@@ -14,6 +14,10 @@ The `cephos-disk-remove` script removes a block device (OSD) from a Ceph cluster
 cephos-disk-remove -d /dev/sdb
 ```
 
+## Attention
+1. Do not delete several disks in parallel
+1. Try not to delete disks while the cluster is actively working.
+
 ## Functionality
 1. Validates that a block device is specified
 1. Checks if the block device exists and is valid

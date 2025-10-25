@@ -27,6 +27,7 @@
 | [cephos-init-mon](documentation/cephos-init-mon.md) | Initialize Ceph Monitor service |
 | [cephos-mkswap](documentation/cephos-mkswap.md) | Create swap space |
 | [cephos-prometheus-helper](documentation/cephos-prometheus-helper.md) | Generates scrape configuration file for prometheus |
+| [cephos-set-fill-ratios](documentation/cephos-set-fill-ratios.md) | Setup cluster fill ratios |
 | [cephos-setup-interface](documentation/cephos-setup-interface.md) | Configure network interfaces |
 | [cephos-shutdown-cluster](documentation/cephos-shutdown-cluster.md) | Shutdown and poweroff all cluster nodes |
 | [cephos-status](documentation/cephos-status.md) | Check system status |

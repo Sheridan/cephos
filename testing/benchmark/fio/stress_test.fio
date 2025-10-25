@@ -1,0 +1,101 @@
+[global]
+ioengine=libaio
+direct=1
+time_based=1
+runtime=8m
+numjobs=4
+group_reporting=1
+log_avg_msec=1000
+write_bw_log=cephops
+write_iops_log=cephops
+write_lat_log=cephops
+write_hist_log=cephops
+read_bw_log=cephops
+read_iops_log=cephops
+read_lat_log=cephops
+read_hist_log=cephops
+randrepeat=0
+iodepth=32
+lat_percentiles=1
+directory=/mnt/cephfs # EDIT THIS!!!
+
+####################################
+# 1. Small files (4K blocks)
+####################################
+
+[randread_small]
+stonewall
+rw=randread
+bs=4k
+size=1G
+filename_format=randread_small.$jobnum
+description=Random read small blocks (4k)
+
+[randwrite_small]
+stonewall
+rw=randwrite
+bs=4k
+size=1G
+filename_format=randwrite_small.$jobnum
+description=Random write small blocks (4k)
+
+####################################
+# 2. Medium files (64K blocks)
+####################################
+
+[randrw_medium]
+stonewall
+rw=randrw
+rwmixread=70
+bs=64k
+size=10G
+filename_format=randrw_medium.$jobnum
+description=Mixed random read/write (70/30) medium blocks
+
+####################################
+# 3. Sequential operations (1M blocks)
+####################################
+
+[seqread_large]
+stonewall
+rw=read
+bs=1M
+size=20G
+filename_format=seqread_large.$jobnum
+description=Sequential read large blocks
+
+[seqwrite_large]
+stonewall
+rw=write
+bs=1M
+size=20G
+filename_format=seqwrite_large.$jobnum
+description=Sequential write large blocks
+
+####################################
+# 4. Very large files (4 GB each)
+####################################
+
+[randrw_huge]
+stonewall
+rw=randrw
+rwmixread=50
+bs=128k
+size=4G
+numjobs=4
+filename_format=hugefile.$jobnum
+description=Mixed random read/write 50/50 on 4GB files
+
+####################################
+# 5. Long “real” stress test
+####################################
+
+[mixed_stress]
+stonewall
+rw=randrw
+rwmixread=50
+bsrange=4k-1M
+size=50G
+filename_format=stressfile.$jobnum
+runtime=12h
+description=Long running mixed read/write stress test over 12h runtime

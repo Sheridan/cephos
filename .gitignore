@@ -1,5 +1,6 @@
 tmp/
 trash/
+testing/benchmark/fio/results
 
 build.log
 logs/
