@@ -19,8 +19,8 @@ do
   case ${opt} in
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -45,3 +45,5 @@ ${sudo_ceph} ceph fs set ${cephfs_name} refuse_standby_for_another_fs false
 set_fs_permissions
 
 cephos-init-mds $(verbose_flag)
+
+beep_done

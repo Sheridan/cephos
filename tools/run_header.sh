@@ -45,8 +45,8 @@ do
     P) root_persistence_block_device="${OPTARG}" ;;
     m) work_mode="${OPTARG}" ;;
     p) persistences="${OPTARG}" ;;
-   \?) echo "Error: unknown option -${OPTARG}"; exit 1 ;;
-    :) echo "Error: option -${OPTARG} requires an argument"; exit 1 ;;
+   \?) echo "Unknown option -${OPTARG}"; exit 1 ;;
+    :) echo "Option -${OPTARG} requires an argument"; exit 1 ;;
   esac
 done
 

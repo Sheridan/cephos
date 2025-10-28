@@ -1,0 +1,8 @@
+[admin]
+    password = ${admin_password}
+    actions = SET
+    instcmds = ALL
+
+[nutmon]
+    password = ${mon_password}
+    upsmon master

@@ -2,6 +2,7 @@
 /etc/chrony/sources.d
 /etc/lvm
 /etc/network/interfaces.d
+/etc/nut
 /etc/systemd/system
 /etc/udev/rules.d
 /var/lib/ceph

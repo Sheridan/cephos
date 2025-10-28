@@ -2,13 +2,12 @@
 
 function check_hostname()
 {
-  if [[ "$0" == "/usr/local/bin/cephos-init-host" ]]
+  if [[ -z "${no_hostname_check:-}" ]]
   then
-    return 0
-  fi
-  if [[ "$(hostname -s)" == "${build_hostname}" ]]
-  then
-    log_cry "Change hostname please"
+    if [[ "$(hostname -s)" == "${build_hostname}" ]]
+    then
+      log_cry "Change hostname please"
+    fi
   fi
 }
 
@@ -40,12 +39,47 @@ function create_directories()
   set_fs_permissions
 }
 
-
-
 function activate_lvm_prescan()
 {
   log_verbose "Enabling ceph-lvm-activate.service"
   sudo systemctl enable ceph-lvm-activate.service
+}
+
+function update_hostname()
+{
+  local node_hostname
+  node_hostname=$(get_node_environment "hostname" "${build_hostname}")
+  local _hostname="${node_hostname%%.*}"
+  local _domain="${node_hostname#*.}"
+
+  if [[ "$(dnsdomainname)" == "${_domain}" ]]
+  then
+    log_info "Domain name '${_domain}' already set"
+  else
+    log_info "Updating domain name to '${_domain}'"
+    sudo domainname "${_domain}"
+  fi
+
+  if [[ "$(hostname -s)" == "${_hostname}" ]]
+  then
+    log_info "Hostname '${_hostname}' already set"
+  else
+    log_info "Updating hostname to '${_hostname}'"
+    sudo hostnamectl hostname "${_hostname}"
+  fi
+}
+
+function update_timezone()
+{
+  local node_timezone
+  node_timezone=$(get_node_environment "timezone" "Etc/UTC")
+  if [[ "$(readlink -f /etc/localtime)" == "/usr/share/zoneinfo/${node_timezone}" ]]
+  then
+    log_info "Timezone '${node_timezone}' already set"
+  else
+    log_info "Updating timezone to '${node_timezone}'..."
+    sudo timedatectl set-timezone "${node_timezone}"
+  fi
 }
 
 function prepare_ceph_data()
@@ -73,6 +107,7 @@ function prepare_ceph_data()
   cluster_network=$(get_cluster_environment "cluster_network" "10.0.0.0/8")
   public_ip=$(get_node_environment "public_ip" "10.0.0.100")
   cluster_ip=$(get_node_environment "cluster_ip" "10.0.0.101")
+
 
   export CLUSTER=ceph
   export CEPH_CLUSTER=ceph

@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+
+# --- functions ---
+function is_snmp()
+{
+  [[ "${mode}" == "snmp_v1" || "${mode}" == "snmp_v2c" ]]
+}
+
+function process_snmp_template()
+{
+  local snmp_version="${mode#snmp_}"
+  local snmp_host="${port}"
+  local driver_name
+  driver_name="${mode}_$(to_safe_string "${port}")"
+
+  log_info "Setting up communication with ${snmp_host} by snmp ${snmp_version}"
+
+  export mode driver_name snmp_host snmp_version snmp_community description admin_password mon_password low_battery_percent
+  for name in upsd.users upsmon.conf
+  do
+    envsubst < "/usr/local/share/cephos/templates/ups/${name}.template" | sudo tee "/etc/nut/${name}" > /dev/null
+  done
+  envsubst < "/usr/local/share/cephos/templates/ups/ups-snmp.conf.template" | sudo tee "/etc/nut/ups.conf"  > /dev/null
+
+  log_info "Use 'cephos-ups-status' for test UPS communication"
+}
+# --- functions ---
+
+mode="snmp_v2c"
+snmp_community="public"
+port=""
+description="UPS"
+admin_password=$(gen_random_password 8)
+mon_password=$(gen_random_password 8)
+low_battery_percent="30"
+
+read -r -d '' help_text <<EOF
+Usage: $0 -m <mode> -c <snmp_community> -p <port> -d <desc> -l <low_battery_%>
+Sets up and starts power monitoring using NUT services.
+Options:
+  -l <low_battery_%>  Specify the low battery percent (default: '${low_battery_percent}')
+  -m <mode>           Specify the target mode (default: '${mode}')
+                        snmp_v1, snmp_v2c
+  -c <snmp_community> Specify the SNMP community (default: '${snmp_community}')
+  -p <port>           Specify the target port
+                        for SNMP it - the UPS address (or hostname)
+  -d <desc>           Specify target description
+  -h                  Show this help message
+  -v                  Enable verbose output
+Examples:
+  Connect to SNMP v2c UPS
+  $0 -m snmp_v2c -c trippline -p ups-trippline.domain.local -d "My main UPS"
+EOF
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":l:m:c:p:d:hv" opt
+do
+  case ${opt} in
+    m) mode="${OPTARG}"                ;;
+    c) snmp_community="${OPTARG}"      ;;
+    p) port="${OPTARG}"                ;;
+    d) description="${OPTARG}"         ;;
+    l) low_battery_percent="${OPTARG}" ;;
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if ! is_integer "${low_battery_percent}"
+then
+  wrong_opt "Low battry percent (-l) must be integer. Current value: ${low_battery_percent}"
+fi
+
+if is_snmp
+then
+  log_verbose "Mode: ${mode}"
+  if [[ -z "$snmp_community" ]]
+  then
+    wrong_opt "SNMP community must be set (-c)"
+  fi
+  if [[ -z "$port" ]]
+  then
+    wrong_opt "Target SNMP host (UPS) must be set (-p)"
+  fi
+fi
+# --- options parse ---
+# --- main ---
+check_user "cephos"
+
+log_info "Setting up power monitoring"
+
+if is_snmp
+then
+  process_snmp_template
+fi
+
+log_info "Enabling services"
+manage_systemd_unit_state "enable" "nut-monitor.service"
+manage_systemd_unit_state "enable" "nut-server.service"
+
+beep_done

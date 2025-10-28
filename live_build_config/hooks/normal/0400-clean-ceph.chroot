@@ -7,8 +7,8 @@ set -e
 
 function systemd_units()
 {
+  echo "radosgw.service"
   {
-    echo "radosgw.service"
     systemctl list-units
     systemctl list-unit-files
   }  | awk '{print $1}' | grep -E '^ceph-.*\.service$' | sort -u

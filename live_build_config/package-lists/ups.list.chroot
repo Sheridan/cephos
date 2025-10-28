@@ -1,0 +1,10 @@
+nut
+nut-client
+nut-i2c
+nut-ipmi
+nut-modbus
+nut-monitor
+nut-server
+nut-snmp
+nut-xml
+snmp

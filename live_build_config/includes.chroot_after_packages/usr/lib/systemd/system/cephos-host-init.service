@@ -1,0 +1,13 @@
+[Unit]
+Description=Set sensitive data early
+After=local-fs.target dbus.service systemd-hostnamed.service systemd-timedated.service
+Before=ceph.target
+Wants=systemd-hostnamed.service systemd-timedated.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cephos-host-init.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

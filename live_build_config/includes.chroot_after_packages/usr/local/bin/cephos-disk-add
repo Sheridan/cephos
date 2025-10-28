@@ -32,8 +32,8 @@ do
     d) block_device="${OPTARG}" ;;
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}" ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 
@@ -75,3 +75,5 @@ set_fs_permissions
 activate_lvm_prescan
 
 log_info "OSD successfully created on ${block_device}"
+
+beep_done

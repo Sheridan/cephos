@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+no_hostname_check=true
+
 . /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
@@ -42,18 +44,22 @@ function restart_shell()
   esac
 }
 
+function set_hostname()
+{
+  log_info "Setting hostname to ${fqdn}..."
+  set_node_environment "hostname" "${fqdn}"
+}
+
 function set_timezone()
 {
-  if [[ -n "${timezone}" ]]
-  then
-    if [[ ! -f "/usr/share/zoneinfo/${timezone}" ]]
-    then
-      log_cry "Error: Timezone '${timezone}' not found under /usr/share/zoneinfo"
-    fi
-    log_info "Setting timezone to ${timezone} via timedatectl..."
-    sudo timedatectl set-timezone "${timezone}"
-    echo "${timezone}" | sudo tee /etc/timezone > /dev/null
-  fi
+  log_info "Setting timezone to ${timezone}..."
+  set_node_environment "timezone" "${timezone}"
+}
+
+function enable_init_service()
+{
+  manage_systemd_unit_state "enable" "cephos-host-init.service"
+  sudo systemctl restart cephos-host-init.service
 }
 # --- functions ---
 # --- options parse ---
@@ -74,8 +80,8 @@ do
     z) timezone="${OPTARG}"        ;;
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 
@@ -86,7 +92,7 @@ fi
 
 if [[ "${fqdn}" != *.* ]]
 then
-  log_cry "Error: string '${fqdn}' is not a FQDN (missing domain part)"
+  log_cry "String '${fqdn}' is not a FQDN (missing domain part)"
 fi
 
 if [[ -z "${public_network}" ]]
@@ -108,6 +114,16 @@ if [[ -z "${cluster_ip}"  ]]
 then
   cluster_ip="${public_ip}"
 fi
+
+if [[ -n "${timezone}" ]]
+then
+  if [[ ! -f "/usr/share/zoneinfo/${timezone}" ]]
+  then
+    log_cry "Timezone '${timezone}' not found under /usr/share/zoneinfo"
+  fi
+else
+  wrong_opt "Timezone (-z) not specified"
+fi
 # --- options parse ---
 # --- main ---
 check_user "cephos"
@@ -124,16 +140,14 @@ set_node_environment "cluster_ip" "${cluster_ip}"
 _hostname="${fqdn%%.*}"
 _domain="${fqdn#*.}"
 
-if [[ "$(hostname -s)" == "${build_hostname}" ]]
-then
-  log_info "Setting hostname to ${_hostname} and domain to ${_domain}"
-  sudo sed -E "s/[[:space:]]*\b${build_hostname}\b//g; s/[[:space:]]+/ /g" /etc/hosts
-  sudo domainname "${_domain}"
-  sudo hostnamectl hostname "${_hostname}"
-  restart_shell
-else
-  log_info "Hostname already applied"
-fi
+log_info "Setting hostname to ${_hostname} and domain to ${_domain}"
+set_hostname
+enable_init_service
 
+sudo sed -E "s/[[:space:]]*\b${build_hostname}\b//g; s/[[:space:]]+/ /g" /etc/hosts
 make_hosts_record "${public_ip}"  "${_hostname} ${_hostname}.${_domain}"
 make_hosts_record "${cluster_ip}" "${_hostname}-cluster"
+
+restart_shell
+
+beep_done

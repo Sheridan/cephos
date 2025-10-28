@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+
+# --- functions ---
+
+function show_ups_status()
+{
+  local description driver_name
+
+  driver_name=$(sudo cat /etc/nut/ups.conf | head -n1)
+  driver_name="${driver_name#[}"
+  driver_name="${driver_name%]}"
+  description=$(sudo cat /etc/nut/ups.conf | grep 'desc = ' | sed -E 's/.*"([^"]*)".*/\1/')
+
+  log_info "${description}"
+  sudo upsc ${driver_name}@localhost
+}
+
+# --- functions ---
+read -r -d '' help_text <<EOF
+Usage: $0
+Check UPS status
+Options:
+  -h Show this help message
+  -v Enable verbose output
+EOF
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- main ---
+check_user "cephos"
+
+if [[ -f "/etc/nut/ups.conf" ]]
+then
+  show_ups_status
+else
+  log_wrn "NUT is not configured. Configure it using cephos-ups-setup"
+fi

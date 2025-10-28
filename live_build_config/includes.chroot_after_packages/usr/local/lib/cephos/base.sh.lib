@@ -57,6 +57,7 @@ function log_err()
 {
   local message="$1"
   log_message "E" "${clr_err}" "${message}"
+  beep_err
 }
 
 function log_delimiter()
@@ -89,6 +90,21 @@ function verbose_flag()
   fi
 }
 
+function beep_err()
+{
+  beep -f 1000 -l 80 -d 50 -n -f 700 -l 100 -d 40 -n -f 500 -l 250
+}
+
+function beep_done()
+{
+  beep -f 600 -l 150 -d 100 -n -f 800 -l 150 -d 100 -n -f 1000 -l 250
+}
+
+function beep_ask()
+{
+  beep -f 1000 -l 150 -d 10000 -n -f 1000 -l 150 -d 10000 -n -f 2000 -l 150
+}
+
 function usage()
 {
   echo "${help_text}"
@@ -104,6 +120,7 @@ function ask_confirmation()
   local prompt_message=$1
   local user_input
 
+  beep_ask
   while true
   do
     echo -ne "[${clr_warn}?${clr_reset}] "
@@ -134,16 +151,93 @@ function manage_systemd_unit_state()
   sudo systemctl ${state} ${unit}
 }
 
+function systemd_service_enabled()
+{
+  local service="$1"
+  local state
+  state=$(systemctl is-enabled "${service}.service" 2>/dev/null)
+  [[ "${state}" == "enabled" ]]
+}
+
+function systemd_service_started()
+{
+  local service="$1"
+  local state
+  state=$(systemctl is-active "${service}.service" 2>/dev/null)
+  [[ "${state}" == "active" ]]
+}
+
 function manage_systemd_service_state()
 {
   local state="$1"
   local service="$2"
   log_verbose "Change service '${service}' state to '${state}'"
-  sudo systemctl ${state} --now ${service}.service
+
+  case "${state}" in
+    enable)
+      if systemd_service_enabled "${service}"
+      then
+        if systemd_service_started "${service}"
+        then
+          log_verbose "Service '${service}' already enabled and running — restarting"
+          sudo systemctl restart "${service}.service"
+        else
+          log_verbose "Service '${service}' enabled but not running — starting"
+          sudo systemctl start "${service}.service"
+        fi
+      else
+        log_verbose "Enabling and starting '${service}'"
+        sudo systemctl enable --now "${service}.service"
+      fi
+    ;;
+    disable)
+      if systemd_service_enabled "${service}"
+      then
+        if systemd_service_started "${service}"
+        then
+          log_verbose "Service '${service}' enabled and running — stopping before disable"
+          sudo systemctl stop "${service}.service"
+        fi
+        log_verbose "Disabling '${service}'"
+        sudo systemctl disable "${service}.service"
+      else
+        if systemd_service_started "${service}"
+        then
+          log_verbose "Service '${service}' disabled but still running — stopping"
+          sudo systemctl stop "${service}.service"
+        else
+          log_verbose "Service '${service}' already disabled and inactive — nothing to do"
+        fi
+      fi
+    ;;
+  esac
 }
 
 function is_float()
 {
   local value="$1"
   [[ "$value" =~ ^-?[0-9]+([.][0-9]+)?$ ]]
+}
+
+function is_integer()
+{
+  local value="$1"
+  [[ "$value" =~ ^-?[0-9]+$ ]]
+}
+
+
+function gen_random_password()
+{
+  local length="$1"
+  tr -dc A-Za-z0-9 </dev/urandom | head -c ${length}
+}
+
+function to_safe_string()
+{
+    local input_string="$1"
+    local safe_string
+
+    safe_string="${input_string//[^a-zA-Z0-9]/_}"
+
+    printf '%s\n' "$safe_string"
 }

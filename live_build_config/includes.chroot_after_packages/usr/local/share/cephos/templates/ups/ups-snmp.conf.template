@@ -1,0 +1,8 @@
+[${driver_name}]
+    driver = snmp-ups
+    port = ${snmp_host}
+    community = ${snmp_community}
+    snmp_version = ${snmp_version}
+    desc = "${description} [${snmp_host}:${mode}]"
+    ignorelb
+    override.battery.charge.low = ${low_battery_percent}

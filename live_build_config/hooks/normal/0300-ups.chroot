@@ -1,0 +1,14 @@
+#!/bin/bash
+
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
+set -e
+
+manage_systemd_unit_state "disable" "nut-server.service"
+manage_systemd_unit_state "disable" "nut-monitor.service"
+
+for f in "ups.conf" "upsd.users" "upsmon.conf"
+do
+  rm -f "/etc/nut/${f}"
+done

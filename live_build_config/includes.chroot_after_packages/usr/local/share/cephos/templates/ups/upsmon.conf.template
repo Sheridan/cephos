@@ -1,0 +1,38 @@
+MONITOR ${driver_name}@localhost 1 nutmon ${mon_password} master
+MINSUPPLIES 1
+SHUTDOWNCMD "/sbin/shutdown -h now"
+POLLFREQ 5
+POLLFREQALERT 5
+HOSTSYNC 15
+DEADTIME 25
+NOCOMMWARNTIME 600
+RBWARNTIME 43200
+POWERDOWNFLAG /etc/nut/killpower
+
+NOTIFYFLAG ONLINE   SYSLOG+WALL
+NOTIFYFLAG ONBATT   SYSLOG+WALL
+NOTIFYFLAG LOWBATT  SYSLOG+WALL
+NOTIFYFLAG FSD      SYSLOG+WALL
+NOTIFYFLAG COMMOK   SYSLOG+WALL
+NOTIFYFLAG COMMBAD  SYSLOG+WALL
+NOTIFYFLAG SHUTDOWN SYSLOG+WALL
+NOTIFYFLAG REPLBATT SYSLOG+WALL
+NOTIFYFLAG NOCOMM   SYSLOG+WALL
+NOTIFYFLAG NOPARENT SYSLOG+WALL
+
+
+# ONLINE   : UPS is back online
+# ONBATT   : UPS is on battery
+# LOWBATT  : UPS has a low battery (if also on battery, it's "critical")
+# FSD      : UPS is being shutdown by the primary (FSD = "Forced Shutdown")
+# COMMOK   : Communications established with the UPS
+# COMMBAD  : Communications lost to the UPS
+# SHUTDOWN : The system is being shutdown
+# REPLBATT : The UPS battery is bad and needs to be replaced
+# NOCOMM   : A UPS is unavailable (can't be contacted for monitoring)
+# NOPARENT : The process that shuts down the system has died (shutdown impossible)
+
+# SYSLOG - Write the message in the syslog
+# WALL   - Write the message to all users on the system
+# EXEC   - Execute NOTIFYCMD (see above) with the message
+# IGNORE - Don't do anything

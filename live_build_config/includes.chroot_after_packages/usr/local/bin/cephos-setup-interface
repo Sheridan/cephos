@@ -73,7 +73,7 @@ function configure_static()
 
   if ! ipcalc-ng -p "$address" "$netmask" > /dev/null 2>&1
   then
-    log_cry "Error: invalid IP address or netmask combination"
+    log_cry "Invalid IP address or netmask combination"
   fi
 
   prefix=$(ipcalc-ng -p "$address" "$netmask" | awk -F= '/PREFIX/{print $2}')
@@ -99,7 +99,7 @@ function get_interface_mac_address()
 
   if [[ -z "$mac_address" ]]
   then
-    log_cry "Error: MAC address for interface '${interface}' not found."
+    log_cry "MAC address for interface '${interface}' not found."
   fi
   echo "${mac_address}"
 }
@@ -137,29 +137,29 @@ do
     d) dhcp=1    ;;
     v) verbose=1 ;;
     h) usage     ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"           ;;
-    :) wrong_opt "Error: option -${OPTARG} requires argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"           ;;
+    :) wrong_opt "Option -${OPTARG} requires argument" ;;
   esac
 done
 
 if [[ -z "$interface" ]]
 then
-  wrong_opt "Error: parameter -i <interface> is required."
+  wrong_opt "Parameter -i <interface> is required."
 fi
 
 if [[ ! "$interface" =~ ^[a-zA-Z0-9_-]+$ ]]
 then
-  wrong_opt "Error: interface name (${interface}) contains invalid characters"
+  wrong_opt "Interface name (${interface}) contains invalid characters"
 fi
 
 if [[ -n "$new_interface_name" && ! "$new_interface_name" =~ ^[a-zA-Z0-9_-]+$ ]]
 then
-  wrong_opt "Error: new interface name (${new_interface_name}) contains invalid characters"
+  wrong_opt "New interface name (${new_interface_name}) contains invalid characters"
 fi
 
 if [[ "$dhcp" -eq 0 && ( -z "$address" || -z "$netmask" ) ]]
 then
-  wrong_opt "Error: parameters -a <address> and -n <netmask> are required in static mode."
+  wrong_opt "Parameters -a <address> and -n <netmask> are required in static mode."
 fi
 
 # Validate IP address format
@@ -167,12 +167,12 @@ if [[ "$dhcp" -eq 0 ]]
 then
   if ! echo "$address" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
   then
-    wrong_opt "Error: invalid IP address format"
+    wrong_opt "Invalid IP address format"
   fi
 
   if ! echo "$netmask" | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$" > /dev/null
   then
-    wrong_opt "Error: invalid netmask format"
+    wrong_opt "Invalid netmask format"
   fi
 fi
 # --- options parse ---
@@ -181,14 +181,14 @@ check_user "cephos"
 
 if ! interface_exists "${interface}"
 then
-  log_cry "Error: interface '${interface}' not found."
+  log_cry "Interface '${interface}' not found."
 fi
 
 if [[ -n "$new_interface_name" ]]
 then
   if interface_exists "${new_interface_name}"
   then
-    log_cry "Error: interface '${new_interface_name}' already exists."
+    log_cry "Interface '${new_interface_name}' already exists."
   fi
   add_udev_rule
 fi

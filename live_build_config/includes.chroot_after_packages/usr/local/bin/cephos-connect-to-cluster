@@ -2,6 +2,7 @@
 
 . /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/ceph.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
 . /usr/local/lib/cephos/ssh.sh.lib
@@ -29,8 +30,8 @@ do
     n) cluster_node="${OPTARG}" ;;
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 
@@ -63,6 +64,6 @@ cephos-init-mon $(verbose_flag) -n "${cluster_node}"
 sleep 4
 ceph_crash_up
 log_delimiter
-cephos-conf-sync $(verbose_flag)
-log_delimiter
 cephos-init-mgr $(verbose_flag)
+
+beep_done

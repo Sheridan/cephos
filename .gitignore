@@ -1,6 +1,8 @@
 tmp/
 trash/
 testing/benchmark/fio/results
+testing/init_home.sh
+testing/init_polygon.sh
 
 build.log
 logs/

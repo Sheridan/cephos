@@ -24,8 +24,8 @@ do
     n) cluster_node="${OPTARG}" ;;
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -69,6 +69,7 @@ then
 
   manage_systemd_service_state "enable" "ceph-mon@${mon_id}"
 
+  beep_done
 else
   log_verbose "MON already exists on this host"
 fi

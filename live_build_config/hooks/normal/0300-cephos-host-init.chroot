@@ -1,0 +1,9 @@
+#!/bin/bash
+
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
+set -e
+
+manage_systemd_unit_state "disable" "cephos-host-init.service"
+manage_systemd_unit_state "enable" "cephos-host-ready.service"

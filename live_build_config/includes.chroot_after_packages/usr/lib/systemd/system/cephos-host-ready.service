@@ -1,0 +1,11 @@
+[Unit]
+Description=Play startup melody when system is up
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/startup-melody.sh
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

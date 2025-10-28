@@ -23,8 +23,8 @@ do
     s) time_server="${OPTARG}" ;;
     h) usage     ;;
     v) verbose=1 ;;
-    \?) wrong_opt "Error: unknown option -${OPTARG}"             ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"             ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 
@@ -41,3 +41,5 @@ ask_confirmation "This operation may cause some unpredictable consequences if th
 sudo systemctl stop chrony.service
 sudo chronyd -q "server ${time_server} iburst"
 sudo systemctl start chrony.service
+
+beep_done

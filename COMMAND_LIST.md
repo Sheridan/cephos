@@ -31,3 +31,5 @@
 | [cephos-setup-interface](documentation/cephos-setup-interface.md) | Configure network interfaces |
 | [cephos-shutdown-cluster](documentation/cephos-shutdown-cluster.md) | Shutdown and poweroff all cluster nodes |
 | [cephos-status](documentation/cephos-status.md) | Check system status |
+| [cephos-ups-setup](documentation/cephos-ups-setup.md) | Setup power monitoring |
+| [cephos-ups-status](documentation/cephos-ups-status.md) | Show UPS status |

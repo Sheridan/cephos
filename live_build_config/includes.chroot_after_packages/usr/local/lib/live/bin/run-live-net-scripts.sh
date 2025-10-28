@@ -1,31 +1,71 @@
 #!/bin/bash
+
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
 set -e
 
-SCRIPT_DIR="/usr/local/lib/live/config"
+scripts_directory="/usr/local/lib/live/net-online"
 
-echo "[live-net-scripts] Waiting for network connectivity..."
+function is_online()
+{
+  local addresses=("8.8.8.8" "1.1.1.1" "8.8.4.4")
 
-if ! ping -c1 -W3 8.8.8.8 >/dev/null 2>&1
-then
-  echo "[live-net-scripts] Warning: Network target reached, but no Internet connectivity detected"
-fi
-
-echo "[live-net-scripts] Running scripts in $SCRIPT_DIR..."
-
-if [ -d "$SCRIPT_DIR" ]
-then
-  for script in "$SCRIPT_DIR"/*
+  for addr in "${addresses[@]}"
   do
-    if [ -x "$script" ]
+    if ping -c1 -W3 "${addr}" >/dev/null 2>&1
     then
-      echo "[live-net-scripts] Executing $script..."
-      "$script"
-    else
-      echo "[live-net-scripts] Skipping non-executable file $script"
+      return 0
     fi
   done
+  return 1
+}
+
+function wait_for_online()
+{
+  local max_retries=30
+  local retry=0
+
+  log_info "Waiting for Internet connectivity..."
+
+  while (( retry < max_retries ))
+  do
+    if is_online
+    then
+      log_info "Internet connectivity established."
+      return 0
+    fi
+    ((retry++))
+    sleep 2
+  done
+
+  log_err "Timeout reached — no internet connectivity after $((max_retries*2)) seconds."
+  return 1
+}
+
+if [[ -d "${scripts_directory}" ]]
+then
+
+  if ! wait_for_online
+  then
+    log_cry "No internet connectivity detected. Terminating."
+  fi
+
+  log_info "Running scripts in ${scripts_directory}..."
+
+  for script in "${scripts_directory}"/*
+  do
+    if [[ -x "${script}" ]]
+    then
+      log_info "Executing ${script}"
+      "$script"
+    else
+      log_warn "Skipping non-executable file ${script}"
+    fi
+  done
+
 else
-  echo "[live-net-scripts] Directory $SCRIPT_DIR not found"
+  log_err "Directory ${scripts_directory} not found"
 fi
 
-echo "[live-net-scripts] All scripts executed."
+log_info "All scripts executed."

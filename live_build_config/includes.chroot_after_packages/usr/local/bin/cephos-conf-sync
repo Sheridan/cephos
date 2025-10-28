@@ -41,8 +41,8 @@ do
   case ${opt} in
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -51,3 +51,5 @@ check_user "cephos"
 log_info "Synchronizing configurations between cluster nodes..."
 generate_ssh_key "${user_home}" "${current_user}"
 update_nodes
+
+beep_done

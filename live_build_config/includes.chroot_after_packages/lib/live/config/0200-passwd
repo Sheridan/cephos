@@ -19,6 +19,7 @@ then
 
   setup_user "cephos" "cephos"
   usermod -aG ceph cephos
+  usermod -aG input cephos
 
   touch $flag_file
 fi

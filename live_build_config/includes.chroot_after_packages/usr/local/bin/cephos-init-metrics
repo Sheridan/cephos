@@ -21,8 +21,8 @@ do
   case ${opt} in
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -45,4 +45,4 @@ log_info "Ceph internal metrics port: 9108"
 mgr_module_enable prometheus
 ceph_config_set "mgr" "mgr/prometheus/server_addr" "::"
 ceph_config_set "mgr" "mgr/prometheus/server_port" "9108"
-sudo systemctl restart ceph-mgr@${mgr_id}.service
+manage_systemd_service_state "enable" "ceph-mgr@${mgr_id}.service"

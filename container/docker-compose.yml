@@ -6,7 +6,7 @@ services:
     stdin_open: true
     user: "${CURRENT_UID}:${CURRENT_GID}"
     build:
-      context: .
+      context: cephos_build
       args:
         USER_ID: ${CURRENT_UID}
         GROUP_ID: ${CURRENT_GID}
@@ -15,3 +15,12 @@ services:
       - ../:/home/worker/project
     environment:
       GITHUB_REF_NAME: ${GITHUB_REF_NAME}
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "0"
+    networks:
+    - default
+
+networks:
+  default:
+    driver: bridge
+    enable_ipv6: true

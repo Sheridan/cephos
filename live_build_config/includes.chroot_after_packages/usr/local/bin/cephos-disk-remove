@@ -39,8 +39,8 @@ do
     f) force=1   ;;
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 
@@ -106,3 +106,5 @@ fi
 set_fs_permissions
 
 log_info "OSD ${osd_id} and disk ${block_device} is removed from ceph."
+
+beep_done

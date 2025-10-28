@@ -1,7 +1,11 @@
 #!/usr/bin/bash
 
+no_hostname_check=true
+
 . /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/links.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 log_info "Initialazing..."
 check_cephos_is_new_version
@@ -19,5 +23,7 @@ do
   [[ "${dest_dir:0:1}" == "#" ]] && continue
   ensure_bind_mount_correct "${dest_dir}" "${cephos_root}${dest_dir}"
 done < /usr/local/share/cephos/init/directories
+
+/usr/sbin/modprobe pcspkr
 
 exec /sbin/init "$@"

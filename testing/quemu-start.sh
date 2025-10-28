@@ -50,14 +50,14 @@ do
     r) force_recreate=1 ;;
     h) usage ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}" ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}" ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 
 if [[ -z "$cluster_conf_string" ]]
 then
-  wrong_opt "Error: -s option is required"
+  wrong_opt "-s option is required"
 fi
 
 # --- options parse ---
@@ -90,7 +90,7 @@ function run_vm()
   do
     if [[ ! -b "${rawdev}" ]]
     then
-      log_cry "Error: ${rawdev} is not a block device"
+      log_cry "${rawdev} is not a block device"
     fi
     vm_drives+=("-drive" "if=virtio,file=${rawdev},format=raw,cache=none")
   done

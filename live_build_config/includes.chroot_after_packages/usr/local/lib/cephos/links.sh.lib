@@ -6,7 +6,6 @@ is_fresh_cephos_image=0
 
 function check_cephos_is_new_version()
 {
-
   local cephos_tag_file="/etc/cephos_build_date"
   local cephos_saved_tag_file="${cephos_root}${cephos_tag_file}"
   local current_tag saved_tag current_tag_mtime saved_tag_mtime
@@ -73,7 +72,8 @@ function ensure_symlink_correct()
     then
       if (( is_new_cephos_version || is_fresh_cephos_image ))
       then
-        log_info "Is fresh CephOS. Do not copy file back to /cephos"
+        log_info "Is fresh CephOS. Do not copy file back to '/cephos' but update mtime"
+        touch "${source_file}"
       else
         log_wrn "[link] Target file '${target_file}' is newer than source '${source_file}'. Replacing source with target."
         mv -f "${target_file}" "${source_file}" || { log_err "[link] Failed to replace source file '${source_file}' with target '${target_file}'"; return 1; }

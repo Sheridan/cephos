@@ -1,11 +1,14 @@
 #!/bin/bash
 
+set -euo pipefail
+
 live_build="lb --color" #--verbose
 project_dir="${HOME}/project"
 work_dir="${HOME}/work"
 live_build_dir="${work_dir}/live_build"
 live_build_config_dir="${live_build_dir}/config"
 tmp_dir="${work_dir}/tmp"
+log_file="${work_dir}/entrypoint.log"
 
 function get_branch_name()
 {
@@ -20,7 +23,7 @@ function get_branch_name()
   echo "${result_branch_name}"
 }
 
-function install_smartcl_exporter
+function install_smartcl_exporter()
 {
   echo "Installing smartcl_exporter"
   local sc_workdir="${tmp_dir}/smartcl_exporter"
@@ -68,8 +71,8 @@ function prepare_config()
 		"${project_dir}/live_build_config/" "${live_build_config_dir}/"
 
 	mkdir -p "${live_build_config_dir}/archives"
-	add_repo "influxdata" "https://repos.influxdata.com/debian stable main"      "https://repos.influxdata.com/influxdata-archive_compat.key"
-	add_repo "ceph"       "https://download.ceph.com/debian-squid bookworm main" "https://download.ceph.com/keys/release.asc"
+	add_repo "influxdata" "https://repos.influxdata.com/debian bookworm main" "https://repos.influxdata.com/influxdata-archive_compat.key"
+	add_repo "ceph"       "https://eu.ceph.com/debian-squid bookworm main"    "https://download.ceph.com/keys/release.asc"
 
   install_smartcl_exporter
 }
@@ -97,9 +100,9 @@ function generate_motd()
   local motd_file="${live_build_config_dir}/includes.chroot_after_packages/etc/motd"
 
   local color_green="\e[1;32m"
-  local color_yllow="\e[1;33m"
+  local color_yellow="\e[1;33m"
   local color_reset="\e[0m"
-  echo -e "${color_yllow}" > "${motd_file}"
+  echo -e "${color_yellow}" > "${motd_file}"
   cat ${live_build_config_dir}/includes.chroot_after_packages/etc/cephos_live_ascii >> "${motd_file}"
   echo -e "${color_reset}" >> "${motd_file}"
 
@@ -131,6 +134,7 @@ function configure()
         --archive-areas "main contrib non-free non-free-firmware" \
         --binary-images hdd \
         --bootappend-live "boot=live components hostname=cephos username=cephos noautologin persistence debugfs=off init=/usr/local/sbin/cephos-init" \
+        --cache-packages true \
         --chroot-squashfs-compression-type lz4 \
         --compression lzip \
         --debian-installer none \
@@ -176,7 +180,7 @@ function set_syslinux_timeout()
     echo "timeout ${timeout}" >> "${config_cfg_prod}"
   fi
 
-  echo "CephOS syslinux timeout: ${timeout}s"
+  echo "CephOS syslinux timeout: ${timeout}"
 }
 
 function build()
@@ -201,13 +205,22 @@ function build()
 function clean()
 {
 	echo "Cleaning data..."
-	sudo rm -rf ${live_build_dir}
+  cd ${live_build_dir}
+  sudo ${live_build} clean --all
+  # sudo ${live_build} clean --stage chroot
+	# sudo rm -rf ${live_build_dir}
 }
-trap clean EXIT
-trap clean ERR
-trap clean INT
-trap clean TERM
 
-prepare_config
-configure
-build
+function main()
+{
+  ip a l
+  getent ahosts repos.influxdata.com
+
+  prepare_config
+  configure
+  build
+}
+
+trap 'clean' EXIT INT TERM
+rm -f "${log_file}"
+main | tee -a "${log_file}"

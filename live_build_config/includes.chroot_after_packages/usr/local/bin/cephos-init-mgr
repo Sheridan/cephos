@@ -21,8 +21,8 @@ do
   case ${opt} in
     h) usage     ;;
     v) verbose=1 ;;
-   \?) wrong_opt "Error: unknown option -${OPTARG}"              ;;
-    :) wrong_opt "Error: option -${OPTARG} requires an argument" ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
 # --- options parse ---
@@ -61,6 +61,8 @@ then
     sleep 8
     cephos-dashboard-user $(verbose_flag) -p 'P@ssw0rd'
   fi
+
+  beep_done
 else
   log_verbose "MGR already exists on this host"
 fi
