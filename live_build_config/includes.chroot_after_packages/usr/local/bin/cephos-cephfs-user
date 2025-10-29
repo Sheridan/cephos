@@ -14,7 +14,7 @@ Options:
   -d                   Delete user subvolume caps
   -D                   Delete user
   -u <name>            User name
-  -g <subvolume_group> CephFS subvolume group (default _nogroup)
+  -g <subvolume_group> CephFS subvolume group (default ${cephfs_nogroup})
   -s <subvolume>       CephFS subvolume
   -h                   Show this help message and exit
   -v                   Enable verbose mode
@@ -41,7 +41,7 @@ function make_caps()
 # --- options parse ---
 action="add"
 username=""
-grp_name="_nogroup"
+grp_name="${cephfs_nogroup}"
 vol_name=""
 while getopts ":g:s:u:adDhv" opt
 do

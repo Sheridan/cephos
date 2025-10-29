@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+. /usr/local/lib/cephos/cephfs.sh.lib
+
+read -r -d '' help_text <<EOF
+Usage: $0 <-a|-d> -g subvolume_group -s subvolume [-hv]
+CephFS subvolumes and subvolumes groups management
+
+Options:
+  -a                   Add subvolume (default)
+  -d                   Delete subvolume (and deletes the group if it becomes empty)
+  -g <subvolume_group> Subvolume group name (default ${grp_name})
+  -s <subvolume>       Subvolume name
+  -h                   Show this help message and exit
+  -v                   Enable verbose mode
+EOF
+set -euo pipefail
+# --- functions ---
+function subvolume_group_is_empty()
+{
+  local subvolume_group_name="${1}"
+  local subvol_list
+  subvol_list=$(${sudo_ceph} ceph fs subvolume ls "${cephfs_name}" $(subvolume_group_option "${subvolume_group_name}") 2>/dev/null)
+  [[ "$subvol_list" == "[]" ]]
+}
+
+function add_subvolume()
+{
+  local subvolume_name="${1}"
+  local subvolume_group_name="${2}"
+  add_subvolume_group "${subvolume_group_name}"
+  if ! subvolume_exists "${subvolume_group_name}" "${subvolume_name}"
+  then
+    log_info "Creating subvolume '${subvolume_name}' in group '${subvolume_group_name}'"
+    ${sudo_ceph} ceph fs subvolume create ${cephfs_name} ${subvolume_name} $(subvolume_group_option "${subvolume_group_name}")
+  else
+    log_verbose "Subvolume '${subvolume_name}' already exists in group '${subvolume_group_name}'"
+  fi
+}
+
+function add_subvolume_group()
+{
+  local subvolume_group_name="${1}"
+  if ! subvolume_group_is_nogroup "${subvolume_group_name}"
+  then
+    if ! subvolumegroup_exists "${subvolume_group_name}"
+    then
+      log_info "Creating subvolume group '${subvolume_group_name}'"
+      ${sudo_ceph} ceph fs subvolumegroup create ${cephfs_name} ${subvolume_group_name}
+    else
+      log_verbose "Subvolume group '${subvolume_group_name}' already exists"
+    fi
+  fi
+}
+
+function del_subvolume()
+{
+  local subvolume_name="${1}"
+  local subvolume_group_name="${2}"
+  if subvolume_exists "${subvolume_group_name}" "${subvolume_name}"
+  then
+    log_info "Deleting subvolume '${subvolume_name}' in group '${subvolume_group_name}'"
+    ${sudo_ceph} ceph fs subvolume rm ${cephfs_name} ${subvolume_name} $(subvolume_group_option "${subvolume_group_name}")
+    del_subvolume_group "${subvolume_group_name}"
+  else
+    log_verbose "Subvolume '${subvolume_name}' does not exist in group '${subvolume_group_name}'"
+  fi
+}
+
+function del_subvolume_group()
+{
+  local subvolume_group_name="${1}"
+  if ! subvolume_group_is_nogroup "${subvolume_group_name}"
+  then
+    if subvolumegroup_exists "${subvolume_group_name}"
+    then
+      if subvolume_group_is_empty "${subvolume_group_name}"
+      then
+        log_info "Deleting subvolume group '${subvolume_group_name}' because it is empty"
+        ${sudo_ceph} ceph fs subvolumegroup rm ${cephfs_name} ${subvolume_group_name}
+      else
+        log_info "Subvolume group '${subvolume_group_name}' has child subvolumes"
+      fi
+    else
+      log_verbose "Subvolume group '${subvolume_group_name}' does not exist"
+    fi
+  fi
+}
+# --- functions ---
+# --- options parse ---
+action="add"
+grp_name="${cephfs_nogroup}"
+vol_name=""
+while getopts ":g:s:adhv" opt
+do
+  case ${opt} in
+    a) action="add"         ;;
+    d) action="del"         ;;
+    g) grp_name="${OPTARG}" ;;
+    s) vol_name="${OPTARG}" ;;
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "${vol_name}" ]]
+then
+  wrong_opt "Subvolume name not specified (-s)"
+fi
+# --- options parse ---
+# --- main ---
+check_user "cephos"
+case "${action}" in
+  add)
+    log_info "Adding subvolume [${grp_name}:${vol_name}]"
+    add_subvolume "${vol_name}" "${grp_name}"
+  ;;
+  del)
+    log_info "Deleting subvolume [${grp_name}:${vol_name}]"
+    del_subvolume "${vol_name}" "${grp_name}"
+  ;;
+esac

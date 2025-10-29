@@ -125,6 +125,7 @@ cephos-conf-sync -v
 ## mount
 ```
 # in dashboard make groups and subvolumes
+cephos-cephfs-subvolume -v -a -s sheridan -g user
 cephos-cephfs-user -v -a -u sheridan -g user -s sheridan
 cephos-cephfs-mount-helper -u sheridan -g user -s sheridan -p /mnt/sheridan -o ~/mnt-helper/sheridan.tar
 ```

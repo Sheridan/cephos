@@ -16,10 +16,27 @@ function subvolumegroup_info()
   ${sudo_ceph} ceph fs subvolumegroup info ${cephfs_name} ${grp_name} 2>/dev/null
 }
 
+function subvolume_group_option()
+{
+  local subvolume_group_name="${1}"
+  if subvolume_group_is_nogroup "${subvolume_group_name}"
+  then
+    printf -- ""
+  else
+    printf -- "--group-name %s" "${subvolume_group_name}"
+  fi
+}
+
+function subvolume_group_is_nogroup()
+{
+  local grp_name="$1"
+  [[ "${grp_name}" == "${cephfs_nogroup}" ]]
+}
+
 function subvolumegroup_exists()
 {
   local grp_name="$1"
-  if [[ "${grp_name}" == "${cephfs_nogroup}" ]]
+  if subvolume_group_is_nogroup "${grp_name}"
   then
     return 0
   fi
@@ -40,14 +57,14 @@ function subvolumegroup_bytes_used()
 function subvolumes()
 {
   local grp_name="$1"
-  ${sudo_ceph} ceph fs subvolume ls ${cephfs_name} --group_name "${grp_name}"  -f json 2>/dev/null | jq -r '.[].name'
+  ${sudo_ceph} ceph fs subvolume ls ${cephfs_name} $(subvolume_group_option ${grp_name})  -f json 2>/dev/null | jq -r '.[].name'
 }
 
 function subvolume_info()
 {
   local grp_name="$1"
   local vol_name="$2"
-  ${sudo_ceph} ceph fs subvolume info ${cephfs_name} ${vol_name} ${grp_name} 2>/dev/null
+  ${sudo_ceph} ceph fs subvolume info ${cephfs_name} ${vol_name} $(subvolume_group_option ${grp_name}) 2>/dev/null
 }
 
 function subvolume_exists()
