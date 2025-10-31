@@ -104,7 +104,7 @@ function mgr_module_enable()
     log_info "Enabling module '${module_name}'..."
     if ${sudo_ceph} ceph mgr module enable "${module_name}" --force
     then
-      echo "Module '${module_name}' has been successfully enabled"
+      log_info "Module '${module_name}' has been successfully enabled"
     else
       log_cry "Failed to enable module '${module_name}'"
     fi

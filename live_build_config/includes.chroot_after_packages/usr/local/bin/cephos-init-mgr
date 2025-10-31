@@ -27,7 +27,7 @@ do
 done
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 log_info "Initializing MGR ${mgr_id} with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
 
@@ -55,9 +55,9 @@ then
   ceph_config_set "mgr" "mgr/dashboard/ssl"                              "false"
   ceph_config_set "mon" "mon_warn_on_insecure_global_id_reclaim_allowed" "false"
 
-  if ! dashboard_user_exists "cephos"
+  if ! dashboard_user_exists "${build_user}"
   then
-    log_info "Creating user 'cephos' with password 'P@ssw0rd'"
+    log_info "Creating user '${build_user}' with password 'P@ssw0rd'"
     sleep 8
     cephos-dashboard-user $(verbose_flag) -p 'P@ssw0rd'
   fi

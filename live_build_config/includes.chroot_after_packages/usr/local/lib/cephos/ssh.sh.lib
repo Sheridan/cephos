@@ -9,14 +9,14 @@ function generate_ssh_key()
   local ssh_dir="${target_home}/.ssh"
   local key_file="${ssh_dir}/id_${ssh_key_type}"
 
-  log_info "Generating key for user '${target_user}'..."
-  log_info "Key path: ${key_file}"
-
   if [[ -f "${key_file}" ]]
   then
-    log_info "Key ${key_file} already exists."
+    log_verbose "Key ${key_file} already exists."
     return 0
   fi
+
+  log_info "Generating key for user '${target_user}'..."
+  log_verbose "Key path: ${key_file}"
 
   if [[ ! -d "${ssh_dir}" ]]
   then
@@ -27,14 +27,14 @@ function generate_ssh_key()
 
   if ! ssh-keygen -t "${ssh_key_type}" -f "${key_file}" -N "" -C "${target_user}@$(hostname -s)"
   then
-    log_cry "Failed to generate ${ssh_key_type} key for user ${target_user}" }
+    log_cry "Failed to generate ${ssh_key_type} key for user ${target_user}"
   fi
 
   chown "${target_user}":"${target_user}" "${key_file}" "${key_file}.pub"
   chmod 600 "${key_file}"
   chmod 644 "${key_file}.pub"
 
-  log_info "Key successfully generated for ${target_user}"
+  log_verbose "Key successfully generated for ${target_user}"
 }
 
 function get_user_home()
@@ -60,13 +60,19 @@ function spread_ssh_key()
 
   local ssh_dir="${current_user_home}/.ssh"
   local pub_key_file="${ssh_dir}/id_${ssh_key_type}.pub"
+  local need_to_spread_flag
+  need_to_spread_flag="${ssh_dir}/$(to_safe_string "${target_user}_${target_host}").spreaded"
 
-  echo "Copying SSH key for user ${target_user} to ${target_host}..."
-  if ! ssh-copy-id -i "${pub_key_file}" "${target_user}@${target_host}"
+  if [[ ! -f "${need_to_spread_flag}" ]]
   then
-    log_cry "Error copying key to ${target_host} for ${target_user}"
+    log_verbose "Copying SSH key for user ${target_user} to ${target_host}..."
+    if ! ssh-copy-id -i "${pub_key_file}" "${target_user}@${target_host}"
+    then
+      log_cry "Error copying key to ${target_host} for ${target_user}"
+    fi
+    touch "${need_to_spread_flag}"
+    log_verbose "SSH key successfully copied to ${target_host}"
   fi
-  log_info "SSH key successfully copied to ${target_host}"
 }
 
 function exec_ssh()
@@ -75,7 +81,7 @@ function exec_ssh()
   local user="$2"
   local cmd="${@:3}"
 
-  log_info "-------======| Executing on ${user}@${host}: ${cmd} |======-------"
+  log_verbose "-------======| Executing on ${user}@${host}: ${cmd} |======-------"
   ssh -t ${user}@${host} "${cmd}"
-  log_delimiter
+  log_verbose_delimiter
 }

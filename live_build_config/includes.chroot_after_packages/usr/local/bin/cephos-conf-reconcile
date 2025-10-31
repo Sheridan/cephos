@@ -48,7 +48,7 @@ do
 done
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 log_info "Synchronizing configurations between cluster nodes..."
 update_ceph_conf
 update_hosts

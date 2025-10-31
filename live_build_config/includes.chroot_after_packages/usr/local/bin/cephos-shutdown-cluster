@@ -23,7 +23,7 @@ function shutdown_nodes()
   for line in "${ceph_hosts[@]}"
   do
     read -r node_name public_ip cluster_ip <<< "${line}"
-    if [[ "${node_name}" != "$(hostname -s)" ]]
+    if ! is_local_host "${node_name}"
     then
       spread_ssh_key "${user_home}" "${current_user}" "${public_ip}"
       exec_ssh "${public_ip}" "${current_user}" "sudo poweroff"
@@ -32,7 +32,7 @@ function shutdown_nodes()
 }
 # --- functions ---
 # --- options parse ---
-current_user="cephos"
+current_user="${build_user}"
 user_home=$(get_user_home "${current_user}")
 while getopts ":hv" opt
 do
@@ -45,7 +45,7 @@ do
 done
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 ask_confirmation "This script will shut down all Ceph cluster nodes. Continue?"
 generate_ssh_key "${user_home}" "${current_user}"
 shutdown_nodes

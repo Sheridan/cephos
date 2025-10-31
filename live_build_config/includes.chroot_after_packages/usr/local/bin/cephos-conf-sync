@@ -23,7 +23,7 @@ function update_nodes()
   for line in "${ceph_hosts[@]}"
   do
     read -r node_name public_ip cluster_ip <<< "${line}"
-    if [[ "${node_name}" == "$(hostname -s)" ]]
+    if is_local_host "${node_name}"
     then
       cephos-conf-reconcile $(verbose_flag)
     else
@@ -34,7 +34,7 @@ function update_nodes()
 }
 # --- functions ---
 # --- options parse ---
-current_user="cephos"
+current_user="${build_user}"
 user_home=$(get_user_home "${current_user}")
 while getopts ":hv" opt
 do
@@ -47,7 +47,7 @@ do
 done
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 log_info "Synchronizing configurations between cluster nodes..."
 generate_ssh_key "${user_home}" "${current_user}"
 update_nodes

@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 no_hostname_check=true
 
@@ -24,6 +24,6 @@ do
   ensure_bind_mount_correct "${dest_dir}" "${cephos_root}${dest_dir}"
 done < /usr/local/share/cephos/init/directories
 
-/usr/sbin/modprobe pcspkr
+/usr/sbin/modprobe pcspkr || true
 
 exec /sbin/init "$@"

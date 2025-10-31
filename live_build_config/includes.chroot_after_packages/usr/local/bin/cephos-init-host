@@ -126,7 +126,7 @@ else
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 log_info "Initializing host ${fqdn} for Ceph with public [${public_ip} : ${public_network}] and cluster [${cluster_ip} : ${cluster_network}] networks"
 

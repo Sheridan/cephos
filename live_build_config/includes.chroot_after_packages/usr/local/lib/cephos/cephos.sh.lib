@@ -4,11 +4,17 @@ function check_hostname()
 {
   if [[ -z "${no_hostname_check:-}" ]]
   then
-    if [[ "$(hostname -s)" == "${build_hostname}" ]]
+    if is_local_host "${build_hostname}"
     then
       log_cry "Change hostname please"
     fi
   fi
+}
+
+function is_local_host()
+{
+  local check_hostname="$1"
+  [[ "$(hostname -s)" == "${check_hostname}" ]]
 }
 
 function set_recursive_permissions()
@@ -60,7 +66,7 @@ function update_hostname()
     sudo domainname "${_domain}"
   fi
 
-  if [[ "$(hostname -s)" == "${_hostname}" ]]
+  if is_local_host "${_hostname}"
   then
     log_info "Hostname '${_hostname}' already set"
   else

@@ -114,7 +114,7 @@ then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 case "${action}" in
   add)
     log_info "Adding subvolume [${grp_name}:${vol_name}]"

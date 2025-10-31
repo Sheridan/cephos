@@ -74,9 +74,6 @@ function archive_directory()
     mkdir -p "${output_dir}"
   fi
 
-  local dir_name
-  dir_name="$(basename "$source_dir")"
-
   tar -czf "$output_file" -C "$source_dir" .
 }
 
@@ -128,7 +125,7 @@ then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 check_exists_vol
 temp_dir=$(mktemp -d)

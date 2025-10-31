@@ -50,7 +50,6 @@ function compression_algorithms()
 compression_algorithm="snappy"
 compression_mode="none"
 required_ratio="0.875"
-output_file=""
 while getopts ":r:a:m:hv" opt
 do
   case ${opt} in
@@ -68,7 +67,7 @@ data_pool="${cephfs_name}_data"
 # --- options parse ---
 
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 if ! compression_modes | grep -qxF "${compression_mode}"
 then

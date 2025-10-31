@@ -34,7 +34,7 @@ then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 ask_confirmation "This operation may cause some unpredictable consequences if the time is highly desynchronized. Continue?"
 

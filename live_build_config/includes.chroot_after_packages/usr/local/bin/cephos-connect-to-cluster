@@ -22,7 +22,7 @@ EOF
 set -euo pipefail
 
 # --- options parse ---
-current_user="cephos"
+current_user="${build_user}"
 cluster_node=""
 while getopts ":n:hv" opt
 do
@@ -41,7 +41,7 @@ then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 user_home=$(get_user_home "${current_user}")
 generate_ssh_key "${user_home}" "${current_user}"

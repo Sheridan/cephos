@@ -1,10 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/base.sh.lib
+verbose=1
+
 set -euo pipefail
 
-echo "[ceph-lvm] Scanning for LVM volume groups..."
+log_info "Scanning for LVM volume groups..."
 vgscan --mknodes
 
-echo "[ceph-lvm] Activating Ceph VGs..."
+log_info "Activating Ceph VGs..."
 vgchange -ay
 
-echo "[ceph-lvm] Activation done."
+log_info "Activation done."

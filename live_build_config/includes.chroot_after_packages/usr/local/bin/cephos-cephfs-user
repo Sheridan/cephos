@@ -75,7 +75,7 @@ then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 case "$action" in
   add)
     check_exists_vol

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Self-extracting Debian Live root_block_device installer with persistence
 
 set -euo pipefail
@@ -14,18 +14,23 @@ Options:
       default: second partition on root block device
   -p: other persistence block devices in format "/dev/sdX:/var/log;/dev/sdY:/cephos"
   -s: only write CephOS image to block device
+
 Examples:
   Write image to device and create persistence partition at same device
     $0 -R /dev/sdi
+
   Write image to device and create persistence partition at other device
     $0 -R /dev/sdi -P /dev/sdj
+
   Write image to device and create persistence partition at other device
         and map '/var/log' to another device
         and map '/var/cache' to another device
     $0 -R /dev/sdi -P /dev/sdj -p "/dev/sdm:/var/log;/dev/sdn:/var/cache"
-  Update image when persistence partition at same device
+
+  Update image when root persistence partition at same device
     $0 -m update -R /dev/sdi
-  Update image when persistence partition at other device
+
+  Update image when root persistence partition at other device
     $0 -s -R /dev/sdi
 EOF
 }
@@ -56,17 +61,17 @@ then
   usage
   exit 1
 fi
-root_partition="${root_block_device}1"
+# root_partition="${root_block_device}1"
 
 root_persistence_partition_number_on_root_device=2
-if [[ -z "$root_persistence_block_device" ]]
+if [[ -z "${root_persistence_block_device}" ]]
 then
   root_persistence_partition="${root_block_device}${root_persistence_partition_number_on_root_device}"
 else
   root_persistence_partition="${root_persistence_block_device}1"
 fi
 
-if [[ -z "$work_mode" ]]
+if [[ -z "${work_mode}" ]]
 then
   echo "No work mode specified (write|update) (-m)"
   usage
@@ -77,7 +82,8 @@ cephos_image=$(mktemp)
 persistence_backup_file=""
 # --- options parse ---
 
-if [ "$(id -u)" -ne 0 ]; then
+if [[ "$(id -u)" -ne 0 ]]
+then
   echo "Run as root"
   exit 1
 fi
@@ -116,8 +122,8 @@ function print_info()
   local device_size
   local device_mib
 
-  local_img_size=$(get_file_size_mib "$cephos_image")
-  device_size=$(blockdev --getsize64 "$root_block_device")
+  local_img_size=$(get_file_size_mib "${cephos_image}")
+  device_size=$(blockdev --getsize64 "${root_block_device}")
   device_mib=$(( device_size / 1024 / 1024 ))
 
   echo "CephOS image size: ${local_img_size} MiB"
@@ -131,12 +137,12 @@ function print_info()
     persist_mib=$(( device_mib - local_img_size ))
     echo "Estimated persistence partition size: ${persist_mib} MiB"
   else
-    print_device_info "$root_persistence_block_device"
+    print_device_info "${root_persistence_block_device}"
   fi
 
   if persistences_exists
   then
-    IFS=";" read -ra entries <<< "$persistences"
+    IFS=";" read -ra entries <<< "${persistences}"
     for entry in "${entries[@]}"
     do
       print_persistence_info "$entry"
@@ -148,7 +154,7 @@ function get_file_size_mib()
 {
   local filepath="$1"
   local file_size
-  file_size=$(stat -c%s "$filepath")
+  file_size=$(stat -c%s "${filepath}")
   echo $(( file_size / 1024 / 1024 ))
 }
 
@@ -156,8 +162,9 @@ function get_file_size_mib()
 function ask_confirmation()
 {
   local prompt_msg="$1"
-  read -rp "$prompt_msg (y/n): " user_answer
-  if [[ "$user_answer" != "y" ]]; then
+  read -rp "${prompt_msg} (y/n): " user_answer
+  if [[ "${user_answer}" != "y" ]]
+  then
     echo "Aborted by user."
     exit 1
   fi
@@ -166,7 +173,7 @@ function ask_confirmation()
 # Function: cleanup temporary files
 function cleanup()
 {
-  rm -f "$cephos_image"
+  rm -f "${cephos_image}"
   [[ -n "${persistence_backup_file:-}" && -f "$persistence_backup_file" ]] && rm -f "$persistence_backup_file"
 }
 trap cleanup EXIT
@@ -178,7 +185,8 @@ function purge_device()
   echo "Purging device ${block_device}"
   dd if=/dev/zero of="${block_device}" bs=1M count=100 conv=fsync
 
-  local disk_size=$(blockdev --getsz "${block_device}")
+  local disk_size
+  disk_size=$(blockdev --getsz "${block_device}")
   local sectors_100M=$((100*1024*1024/512))    # 204800
   local seek_lvm=$((disk_size - sectors_100M))
   dd if=/dev/zero of="${block_device}" bs=512 seek=${seek_lvm} count=${sectors_100M} conv=fsync
@@ -187,7 +195,7 @@ function purge_device()
   local seek_gpt=$((size_mb - 10))
   dd if=/dev/zero of="${block_device}" bs=1M seek=${seek_gpt} count=10 conv=fsync
 
-  partprobe ${block_device} || blockdev --rereadpt "${block_device}" || true
+  partprobe "${block_device}" || blockdev --rereadpt "${block_device}" || true
   sleep 1
 }
 

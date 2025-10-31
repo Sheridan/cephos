@@ -25,7 +25,7 @@ do
 done
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 log_info "Initializing MDS ${mds_id} with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
 

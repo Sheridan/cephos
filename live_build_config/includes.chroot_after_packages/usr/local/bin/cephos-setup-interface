@@ -177,7 +177,7 @@ then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 if ! interface_exists "${interface}"
 then

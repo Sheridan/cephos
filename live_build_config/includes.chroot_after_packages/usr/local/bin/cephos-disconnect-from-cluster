@@ -45,7 +45,7 @@ done
 # --- options parse ---
 
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 ask_confirmation "This operation will remove all local disks from the cluster and destroy all data on disks. Finally, it will remove this node from the cluster. Continue?"
 
 while read -r block_device

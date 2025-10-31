@@ -46,7 +46,7 @@ do
 done
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 ratios_check
 log_info "Set ratios to: [nearfull-ratio:${nearfull_ratio}], [backfillfull-ratio:${backfillfull_ratio}], [full-ratio:${full_ratio}]"
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 . live_build_config/includes.chroot_after_packages/usr/local/lib/cephos/base.sh.lib
 use_logfile=0
@@ -52,7 +52,6 @@ function wait_vm()
     if (( elapsed_time > max_vm_wait_seconds ))
     then
       log_cry "Timeout waiting for SSH for VM $vm (${max_vm_wait_seconds} sec)."
-      return 1
     fi
     log_wrn "VM $vm is unavailable. Retrying in ${check_interval} sec..."
     sleep "$check_interval"
@@ -108,7 +107,7 @@ wait_all_vm
 log_info "Initializing hosts..."
 for vm in "${vm_hosts[@]}"
 do
-  exec_ssh "${vm}" "cephos-init-host -v -n ${vm}.domain.local -z "Europe/Moscow" -P 192.168.0.0/24 -C 192.168.1.0/24 -p 192.168.0.${vm_ip_index[$vm]} -c 192.168.1.${vm_ip_index[$vm]}"
+  exec_ssh "${vm}" "cephos-init-host -v -n ${vm}.domain.local -z 'Europe/Moscow' -P 192.168.0.0/24 -C 192.168.1.0/24 -p 192.168.0.${vm_ip_index[$vm]} -c 192.168.1.${vm_ip_index[$vm]}"
 done
 
 log_info "Initializing cephos..."

@@ -25,7 +25,8 @@ function purge_device()
 
   sudo dd if=/dev/zero of="${block_device}" bs=1M count=100 conv=fsync
 
-  local disk_size=$(sudo blockdev --getsz "${block_device}")
+  local disk_size
+  disk_size=$(sudo blockdev --getsz "${block_device}")
   local sectors_100M=$((100*1024*1024/512))    # 204800
   local seek_lvm=$((disk_size - sectors_100M))
   sudo dd if=/dev/zero of="${block_device}" bs=512 seek=${seek_lvm} count=${sectors_100M} conv=fsync
@@ -41,7 +42,7 @@ function purge_device()
 function print_device_info()
 {
   local device="$1"
-  echo "Device Info: $device"
-  lsblk -o NAME,SIZE,PARTLABEL,LABEL,FSTYPE,MODEL,VENDOR,SERIAL,UUID,MOUNTPOINT "$device"
-  echo "-------------------------------------"
+  log_info "Device Info: ${device}"
+  lsblk -o NAME,SIZE,PARTLABEL,LABEL,FSTYPE,MODEL,VENDOR,SERIAL,UUID,MOUNTPOINT "${device}"
+  log_delimiter
 }

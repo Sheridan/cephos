@@ -60,7 +60,7 @@ exporters=(
 )
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 rm -f "${output_file}"
 
 output_dir=$(dirname "${output_file}")

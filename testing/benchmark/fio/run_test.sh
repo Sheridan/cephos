@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 . live_build_config/includes.chroot_after_packages/usr/local/lib/cephos/base.sh.lib
 use_logfile=0
@@ -42,12 +42,12 @@ log_file="${results_dir}/fio_runtime.log"
 # -------------------------------
 # Environment checks
 # -------------------------------
-if [ ! -f "${fio_conf}" ]
+if [[ ! -f "${fio_conf}" ]]
 then
   wrong_opt "Config file ${fio_conf} not found."
 fi
 
-if [ ! -d "${mount_dir}" ]
+if [[ ! -d "${mount_dir}" ]]
 then
   wrong_opt "Directory ${mount_dir} does not exist or CephFS is not mounted."
 fi

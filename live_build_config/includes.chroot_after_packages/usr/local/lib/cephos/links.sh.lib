@@ -59,7 +59,7 @@ function ensure_symlink_correct()
 
   if [[ ! -f "${source_file}" ]]
   then
-    log_err "[link] Source file '${source_file}' does not exist."
+    log_wrn "[link] Source file '${source_file}' does not exist."
     return 1
   fi
 

@@ -8,6 +8,7 @@ clr_verb="\e[1;36m"
 verbose=0
 use_logfile=1
 build_hostname="cephos"
+build_user="cephos"
 
 function log_file()
 {
@@ -63,6 +64,14 @@ function log_err()
 function log_delimiter()
 {
   log_message "=" "${clr_verb}"  "--------==|==--------"
+}
+
+function log_verbose_delimiter()
+{
+  if (( verbose ))
+  then
+    log_message "=" "${clr_verb}"  "--------==|==--------"
+  fi
 }
 
 function wrong_opt()

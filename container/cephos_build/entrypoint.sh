@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -168,7 +168,7 @@ function set_syslinux_timeout()
 
   mkdir -p "${bootloader_dir}"
 
-  if [ ! -f "${config_cfg_prod}" ]
+  if [[ ! -f "${config_cfg_prod}" ]]
   then
     cp /usr/share/live/build/bootloaders/syslinux/syslinux.cfg "${config_cfg_prod}"
   fi

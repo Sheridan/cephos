@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 . /usr/local/lib/cephos/base.sh.lib
 verbose=1

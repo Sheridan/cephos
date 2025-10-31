@@ -53,7 +53,7 @@ if [[ ! -b "$block_device" ]]; then
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 
 if ! disk_already_in_ceph "${block_device}"
 then

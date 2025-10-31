@@ -4,8 +4,6 @@
 
 The `cephos-cephfs-subvolume` script manages CephFS subvolumes and subvolume groups in a Ceph cluster. It supports creating (adding) and removing (deleting) subvolumes, with automatic handling of subvolume groups: groups are created if they do not exist when adding a subvolume, and deleted if they become empty after deletion.
 
-This script is designed for use in the CephOS environment and requires execution as the `cephos` user. It interacts with the Ceph filesystem specified by the `${cephfs_name}` variable from the configuration.
-
 ## Usage
 
 ```

@@ -14,3 +14,6 @@ build: build_container
 
 clean:
 	cd container && $(DOCKER_COMPOSE) down --volumes --remove-orphans
+
+purge:
+	rm -rf tmp/*

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 . /usr/local/lib/cephos/base.sh.lib
 verbose=1
@@ -10,7 +10,7 @@ function install_omzsh()
   local user_name="$1"
   local user_home="$2"
 
-  if [ ! -d "${user_home}/.oh-my-zsh" ]
+  if [[ ! -d "${user_home}/.oh-my-zsh" ]]
   then
     log_info "Installing oh-my-zsh for user ${user_name}"
     if ! git clone https://github.com/ohmyzsh/ohmyzsh.git ${user_home}/.oh-my-zsh
@@ -24,13 +24,13 @@ function install_omzsh()
 }
 
 flag_file="/var/lib/live/config/omzsh"
-if [ ! -f $flag_file ]
+if [[ ! -f "${flag_file}" ]]
 then
   log_info "Trying to run script"
   if curl -s --head --connect-timeout 5 https://github.com >/dev/null
   then
     install_omzsh "root" "/root"
-    install_omzsh "cephos" "/home/cephos"
+    install_omzsh "${build_user}" "/home/${build_user}"
     touch $flag_file
   else
     log_err "Network check failed, skipping oh-my-zsh installation"

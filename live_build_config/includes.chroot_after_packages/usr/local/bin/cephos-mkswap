@@ -19,7 +19,8 @@ function format_partitions()
 
 function update_fstab()
 {
-  local uuid_swap=$(sudo blkid -s UUID -o value "${block_device}")
+  local uuid_swap
+  uuid_swap=$(sudo blkid -s UUID -o value "${block_device}")
 
   log_info "Adding entries to /etc/fstab..."
   echo "UUID=${uuid_swap} none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
@@ -43,13 +44,13 @@ then
   wrong_opt "Options not specified"
 fi
 
-if [ ! -b "$block_device" ]
+if [[ ! -b "$block_device" ]]
 then
   log_cry "Block device ${block_device} not exists or not a valid block device"
 fi
 # --- options parse ---
 # --- main ---
-check_user "cephos"
+check_user "${build_user}"
 ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 format_partitions
 update_fstab
