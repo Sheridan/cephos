@@ -80,6 +80,3 @@ jobs:
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d parse_mode="Markdown" \
             --data-urlencode text="$MESSAGE"
-
-      - name: Cleanup
-        run: make purge
