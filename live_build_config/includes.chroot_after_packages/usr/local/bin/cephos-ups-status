@@ -19,8 +19,8 @@ function show_ups_status()
 
 # --- functions ---
 read -r -d '' help_text <<EOF
-Usage: $0
 Check UPS status
+
 Options:
   -h Show this help message
   -v Enable verbose output

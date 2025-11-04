@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/ssh.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+CephFS instances manager
+
+Options:
+  -a              Add CephFS instance
+  -d              Delete CephFS instance
+  -f <filesystem> CephFS name (default '${default_cephfs_name}')
+  -h              Display this help message
+  -v              Enable verbose output
+EOF
+set -euo pipefail
+# --- functions ---
+function init_mds_manager_all_nodes()
+{
+  log_info "Starting MDS manager on all nodes"
+  mapfile -t ceph_hosts < <(get_ceph_hosts)
+  for line in "${ceph_hosts[@]}"
+  do
+    read -r node_name public_ip cluster_ip <<< "${line}"
+    if is_local_host "${node_name}"
+    then
+      cephos-init-mds-manager $(verbose_flag)
+    else
+      exec_ssh_cephos "${public_ip}" "cephos-init-mds-manager $(verbose_flag)"
+    fi
+  done
+}
+
+function add_cephfs()
+{
+  if ! cephfs_exists "${cephfs_name}"
+  then
+    log_info "Creating CephFS '${cephfs_name}' pools"
+    ${sudo_ceph} ceph osd pool create ${cephfs_name}_metadata
+    ${sudo_ceph} ceph osd pool set    ${cephfs_name}_metadata bulk false
+    ${sudo_ceph} ceph osd pool create ${cephfs_name}_data
+    ${sudo_ceph} ceph osd pool set    ${cephfs_name}_data     bulk true
+
+    log_info "Creating filesystem '${cephfs_name}'"
+    ${sudo_ceph} ceph fs new ${cephfs_name} ${cephfs_name}_metadata ${cephfs_name}_data
+
+    log_info "Configuring filesystem '${cephfs_name}'"
+    ${sudo_ceph} ceph fs set ${cephfs_name} max_mds 1
+    ${sudo_ceph} ceph fs set ${cephfs_name} standby_count_wanted 1
+    ${sudo_ceph} ceph fs set ${cephfs_name} allow_standby_replay true
+    ${sudo_ceph} ceph fs set ${cephfs_name} refuse_standby_for_another_fs false
+
+    set_fs_permissions
+
+    init_mds_manager_all_nodes
+  else
+    log_wrn "CephFS '${cephfs_name}' already exists"
+  fi
+}
+
+function del_cephfs()
+{
+  if cephfs_exists "${cephfs_name}"
+  then
+    log_info "Removing filesystem '${cephfs_name}'"
+    ${sudo_ceph} ceph fs fail ${cephfs_name}
+    ${sudo_ceph} ceph fs rm ${cephfs_name} --yes-i-really-mean-it
+
+    log_info "Removing CephFS '${cephfs_name}' pools"
+    ${sudo_ceph} ceph osd pool delete ${cephfs_name}_metadata ${cephfs_name}_metadata --yes-i-really-really-mean-it
+    ${sudo_ceph} ceph osd pool delete ${cephfs_name}_data     ${cephfs_name}_data     --yes-i-really-really-mean-it
+  else
+    log_wrn "CephFS '${cephfs_name}' is not exists"
+  fi
+}
+
+# --- functions ---
+# --- options parse ---
+cephfs_name="${default_cephfs_name}"
+action="add"
+while getopts ":f:adhv" opt
+do
+  case ${opt} in
+    a) action="add" ;;
+    d) action="del" ;;
+    f) cephfs_name="${OPTARG}" ;;
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- main ---
+check_user "${build_user}"
+
+case "$action" in
+  add) add_cephfs ;;
+  del)
+    ask_confirmation "This operation will destroy '${cephfs_name}' and all his pools with data. Continue?"
+    del_cephfs
+  ;;
+esac
+
+
+beep_done

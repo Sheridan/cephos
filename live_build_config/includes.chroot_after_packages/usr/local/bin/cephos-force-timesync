@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS forced time sync
 
 Options:
--s <host>  Specify the time server host
--h         Display this help message
--v         Enable verbose output
+  -s <host>  Specify the time server host
+  -h         Display this help message
+  -v         Enable verbose output
 
 Examples:
 $0 -s time.domain.local -v
@@ -38,8 +38,8 @@ check_user "${build_user}"
 
 ask_confirmation "This operation may cause some unpredictable consequences if the time is highly desynchronized. Continue?"
 
-sudo systemctl stop chrony.service
+manage_systemd_service_state "stop" "chrony"
 sudo chronyd -q "server ${time_server} iburst"
-sudo systemctl start chrony.service
+manage_systemd_service_state "start" "chrony"
 
 beep_done

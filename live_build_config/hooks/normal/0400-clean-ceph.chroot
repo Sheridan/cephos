@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 verbose=1
 
 set -e
 
 function systemd_units()
 {
+  echo "cephos-mds-manager.service"
   echo "radosgw.service"
   {
     systemctl list-units

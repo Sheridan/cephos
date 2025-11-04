@@ -15,8 +15,8 @@ The `cephos-init-cephfs` script initializes a Ceph File System (CephFS) on a Cep
 1. Initializes MDS (Metadata Server) service
 
 ## Pool Creation
-- Creates `${cephfs_name}_metadata` pool with `bulk false` setting
-- Creates `${cephfs_name}_data` pool with `bulk true` setting
+- Creates `(fs_name)_metadata` pool with `bulk false` setting
+- Creates `(fs_name)_data` pool with `bulk true` setting
 
 ## Filesystem Configuration
 - Sets maximum MDS count to 1

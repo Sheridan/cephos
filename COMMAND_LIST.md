@@ -6,7 +6,9 @@
 |---------|-------------|
 | [cephos-add-timeserver](documentation/cephos-add-timeserver.md) | Configure time server settings |
 | [cephos-cephfs-compression](documentation/cephos-cephfs-compression.md) | CephFS compression management |
+| [cephos-cephfs-manager](documentation/cephos-cephfs-manager.md) | CephFS filesystems manager |
 | [cephos-cephfs-mount-helper](documentation/cephos-cephfs-mount-helper.md) | Create CephFS mount configuration |
+| [cephos-cephfs-replica](documentation/cephos-cephfs-replica.md) | Manage replica size for CephFS |
 | [cephos-cephfs-subvolume](documentation/cephos-cephfs-subvolume.md) | Manage CephFS subvolumes |
 | [cephos-cephfs-top](documentation/cephos-cephfs-top.md) | Monitor CephFS performance |
 | [cephos-cephfs-user](documentation/cephos-cephfs-user.md) | Manage CephFS users |
@@ -22,7 +24,6 @@
 | [cephos-init-cephfs](documentation/cephos-init-cephfs.md) | Initialize Ceph File System |
 | [cephos-init-cluster](documentation/cephos-init-cluster.md) | Initialize new Ceph cluster |
 | [cephos-init-host](documentation/cephos-init-host.md) | Initialize host configuration |
-| [cephos-init-mds](documentation/cephos-init-mds.md) | Initialize Ceph Metadata Server |
 | [cephos-init-metrics](documentation/cephos-init-metrics.md) | Initialize metrics collection |
 | [cephos-init-mgr](documentation/cephos-init-mgr.md) | Initialize Ceph Manager service |
 | [cephos-init-mon](documentation/cephos-init-mon.md) | Initialize Ceph Monitor service |

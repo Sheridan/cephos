@@ -1,18 +1,36 @@
 #!/usr/bin/env bash
 
-bytes_format="numfmt --format '%fb' --to=iec"
+[[ -n "${LIB_CEPHFS_IN:-}" ]] && return 0
+LIB_CEPHFS_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
+default_cephfs_name="storage"
 cephfs_nogroup="_nogroup"
+
+function cephfs_list()
+{
+  ${sudo_ceph} ceph fs ls -f json | jq -r '.[].name'
+}
+
+function cephfs_exists()
+{
+  local cephfs_name="$1"
+  cephfs_list | grep -Fxq -- "$cephfs_name"
+}
 
 # ----== subvolumegroups ==----
 
 function subvolumegroups()
 {
+  local cephfs_name="$1"
   ${sudo_ceph} ceph fs subvolumegroup ls ${cephfs_name} -f json | jq -r '.[].name' 2>/dev/null
 }
 
 function subvolumegroup_info()
 {
-  local grp_name="$1"
+  local cephfs_name="$1"
+  local grp_name="$2"
   ${sudo_ceph} ceph fs subvolumegroup info ${cephfs_name} ${grp_name} 2>/dev/null
 }
 
@@ -35,60 +53,67 @@ function subvolume_group_is_nogroup()
 
 function subvolumegroup_exists()
 {
-  local grp_name="$1"
+  local cephfs_name="$1"
+  local grp_name="$2"
   if subvolume_group_is_nogroup "${grp_name}"
   then
     return 0
   fi
-  subvolumegroup_info "${grp_name}" &>/dev/null
+  subvolumegroup_info "${cephfs_name}" "${grp_name}" &>/dev/null
   return $?
 }
 
 function subvolumegroup_bytes_used()
 {
-  local grp_name="$1"
+  local cephfs_name="$1"
+  local grp_name="$2"
   local bu
-  bu=$(subvolumegroup_info "${grp_name}" | jq '.bytes_used')
-  ${bytes_format} <<< "${bu}"
+  bu=$(subvolumegroup_info "${cephfs_name}" "${grp_name}" | jq '.bytes_used')
+  bytes_human_readable "${bu}"
 }
 
 # ----== subvolumes ==----
 
 function subvolumes()
 {
-  local grp_name="$1"
+  local cephfs_name="$1"
+  local grp_name="$2"
   ${sudo_ceph} ceph fs subvolume ls ${cephfs_name} $(subvolume_group_option ${grp_name})  -f json 2>/dev/null | jq -r '.[].name'
 }
 
 function subvolume_info()
 {
-  local grp_name="$1"
-  local vol_name="$2"
+  local cephfs_name="$1"
+  local grp_name="$2"
+  local vol_name="$3"
   ${sudo_ceph} ceph fs subvolume info ${cephfs_name} ${vol_name} $(subvolume_group_option ${grp_name}) 2>/dev/null
 }
 
 function subvolume_exists()
 {
-  local grp_name="$1"
-  local vol_name="$2"
-  subvolume_info "${grp_name}" "${vol_name}" &>/dev/null
+  local cephfs_name="$1"
+  local grp_name="$2"
+  local vol_name="$3"
+  subvolume_info "${cephfs_name}" "${grp_name}" "${vol_name}" &>/dev/null
   return $?
 }
 
 function subvolume_bytes_used()
 {
-  local grp_name="$1"
-  local vol_name="$2"
+  local cephfs_name="$1"
+  local grp_name="$2"
+  local vol_name="$3"
   local bu
-  bu=$(subvolume_info "${grp_name}" "${vol_name}" | jq '.bytes_used')
-  ${bytes_format} <<< "${bu}"
+  bu=$(subvolume_info "${cephfs_name}" "${grp_name}" "${vol_name}" | jq '.bytes_used')
+  bytes_human_readable "${bu}"
 }
 
 function subvolume_path()
 {
-  local grp_name="$1"
-  local vol_name="$2"
-  subvolume_info "${grp_name}" "${vol_name}" | jq -r '.path'
+  local cephfs_name="$1"
+  local grp_name="$2"
+  local vol_name="$3"
+  subvolume_info "${cephfs_name}" "${grp_name}" "${vol_name}" | jq -r '.path'
 }
 
 # ----== users ==----
@@ -102,13 +127,13 @@ function cephfs_user_exists()
 function cephfs_user_subvolume_caps()
 {
   local username="$1"
-  local grp_name="$2"
-  local vol_name="$3"
-  local action="$4"
-
+  local cephfs_name="$2"
+  local grp_name="$3"
+  local vol_name="$4"
+  local action="$5"
 
   local path
-  path=$(subvolume_path "${grp_name}" "${vol_name}")
+  path=$(subvolume_path "${cephfs_name}" "${grp_name}" "${vol_name}")
 
   local mon_caps osd_caps mds_caps
 
@@ -177,7 +202,7 @@ function cephfs_user_subvolume_caps()
     fi
 
     mon_caps="allow r"
-    osd_caps="allow rw pool=${cephfs_name}_data"
+    osd_caps="allow rw pool=${default_cephfs_name}_data"
     mds_caps="allow rw path=${path}"
 
     log_info "Creating new caps for client.${username} with path [${grp_name}:${vol_name}]"

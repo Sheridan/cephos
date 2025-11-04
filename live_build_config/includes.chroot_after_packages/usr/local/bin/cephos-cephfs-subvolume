@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 <-a|-d> -g subvolume_group -s subvolume [-hv]
 CephFS subvolumes and subvolumes groups management
 
 Options:
   -a                   Add subvolume (default)
   -d                   Delete subvolume (and deletes the group if it becomes empty)
+  -f <filesystem>      CephFS name (default '${default_cephfs_name}')
   -g <subvolume_group> Subvolume group name (default ${grp_name})
   -s <subvolume>       Subvolume name
   -h                   Show this help message and exit
@@ -32,7 +30,7 @@ function add_subvolume()
   local subvolume_name="${1}"
   local subvolume_group_name="${2}"
   add_subvolume_group "${subvolume_group_name}"
-  if ! subvolume_exists "${subvolume_group_name}" "${subvolume_name}"
+  if ! subvolume_exists "${cephfs_name}" "${subvolume_group_name}" "${subvolume_name}"
   then
     log_info "Creating subvolume '${subvolume_name}' in group '${subvolume_group_name}'"
     ${sudo_ceph} ceph fs subvolume create ${cephfs_name} ${subvolume_name} $(subvolume_group_option "${subvolume_group_name}")
@@ -46,7 +44,7 @@ function add_subvolume_group()
   local subvolume_group_name="${1}"
   if ! subvolume_group_is_nogroup "${subvolume_group_name}"
   then
-    if ! subvolumegroup_exists "${subvolume_group_name}"
+    if ! subvolumegroup_exists "${cephfs_name}" "${subvolume_group_name}"
     then
       log_info "Creating subvolume group '${subvolume_group_name}'"
       ${sudo_ceph} ceph fs subvolumegroup create ${cephfs_name} ${subvolume_group_name}
@@ -60,7 +58,7 @@ function del_subvolume()
 {
   local subvolume_name="${1}"
   local subvolume_group_name="${2}"
-  if subvolume_exists "${subvolume_group_name}" "${subvolume_name}"
+  if subvolume_exists "${cephfs_name}" "${subvolume_group_name}" "${subvolume_name}"
   then
     log_info "Deleting subvolume '${subvolume_name}' in group '${subvolume_group_name}'"
     ${sudo_ceph} ceph fs subvolume rm ${cephfs_name} ${subvolume_name} $(subvolume_group_option "${subvolume_group_name}")
@@ -75,7 +73,7 @@ function del_subvolume_group()
   local subvolume_group_name="${1}"
   if ! subvolume_group_is_nogroup "${subvolume_group_name}"
   then
-    if subvolumegroup_exists "${subvolume_group_name}"
+    if subvolumegroup_exists "${cephfs_name}" "${subvolume_group_name}"
     then
       if subvolume_group_is_empty "${subvolume_group_name}"
       then
@@ -92,21 +90,28 @@ function del_subvolume_group()
 # --- functions ---
 # --- options parse ---
 action="add"
+cephfs_name="${default_cephfs_name}"
 grp_name="${cephfs_nogroup}"
 vol_name=""
-while getopts ":g:s:adhv" opt
+while getopts ":f:g:s:adhv" opt
 do
   case ${opt} in
-    a) action="add"         ;;
-    d) action="del"         ;;
-    g) grp_name="${OPTARG}" ;;
-    s) vol_name="${OPTARG}" ;;
+    a) action="add"            ;;
+    d) action="del"            ;;
+    f) cephfs_name="${OPTARG}" ;;
+    g) grp_name="${OPTARG}"    ;;
+    s) vol_name="${OPTARG}"    ;;
     h) usage     ;;
     v) verbose=1 ;;
    \?) wrong_opt "Unknown option -${OPTARG}"              ;;
     :) wrong_opt "Option -${OPTARG} requires an argument" ;;
   esac
 done
+
+if ! cephfs_exists "${cephfs_name}"
+then
+  log_cry "CephFS '${cephfs_name}' does not exists"
+fi
 
 if [[ -z "${vol_name}" ]]
 then

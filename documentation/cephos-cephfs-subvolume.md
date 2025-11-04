@@ -7,7 +7,7 @@ The `cephos-cephfs-subvolume` script manages CephFS subvolumes and subvolume gro
 ## Usage
 
 ```
-cephos-cephfs-subvolume <-a|-d> -g subvolume_group -s subvolume [-hv]
+cephos-cephfs-subvolume [-a|-d] [-f <filesystem>] [-g <subvolume_group>] -s <subvolume> [-hv]
 ```
 
 CephFS subvolumes and subvolume groups management.
@@ -16,6 +16,7 @@ CephFS subvolumes and subvolume groups management.
 
 - `-a`: Add subvolume (default action).
 - `-d`: Delete subvolume (and removes the group if it becomes empty).
+- `-f <filesystem>`: CephFS name (default: `${default_cephfs_name}`).
 - `-g <subvolume_group>`: Specify the subvolume group name (default: `${cephfs_nogroup}`, typically no group).
 - `-s <subvolume>`: Specify the subvolume name (required).
 - `-h`: Show this help message and exit.
@@ -50,8 +51,8 @@ cephos-cephfs-subvolume -d -g users -s data
 ## Behavior Details
 
 - **Adding a Subvolume**:
-  - If the subvolume does not exist in the specified group, it is created using default `_nogroup` group.
-  - The subvolume group is created if it does not exist and a group is specified (using `ceph fs subvolumegroup create`).
+  - If the subvolume does not exist, it is created in the specified group (or `_nogroup` if none specified).
+  - The subvolume group is created if it does not exist and a group other than `_nogroup` is specified (using `ceph fs subvolumegroup create`).
   - If the subvolume already exists, a verbose message is logged, but no action is taken.
 
 - **Deleting a Subvolume**:

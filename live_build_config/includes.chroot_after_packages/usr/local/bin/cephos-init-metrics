@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 [-hv]
 Initialize a CephOS metrics collectors.
 
 Options:
@@ -28,6 +25,7 @@ done
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+check_hostname
 
 log_info "Node exporter metrics port: 9100"
 manage_systemd_service_state "enable" "prometheus-node-exporter"
@@ -45,4 +43,4 @@ log_info "Ceph internal metrics port: 9108"
 mgr_module_enable prometheus
 ceph_config_set "mgr" "mgr/prometheus/server_addr" "::"
 ceph_config_set "mgr" "mgr/prometheus/server_port" "9108"
-manage_systemd_service_state "enable" "ceph-mgr@${mgr_id}.service"
+manage_systemd_service_state "enable" "ceph-mgr@$(get_mgr_id).service"

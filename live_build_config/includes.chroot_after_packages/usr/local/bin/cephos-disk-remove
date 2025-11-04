@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -d <block_device>
 This script removes a block device (OSD) from a Ceph cluster.
 
 Options:
@@ -54,6 +50,7 @@ fi
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+check_hostname
 
 if ! disk_already_in_ceph "${block_device}"
 then
@@ -75,7 +72,7 @@ log_info "Detected OSD ID: ${osd_id}"
 log_wrn "Do not delete several disks in parallel! Try not to delete disks while the cluster is actively working."
 ask_confirmation "This operation will remove disk ${block_device} from the cluster and destroy all data on the disk. Continue?"
 
-log_info "Removing disk ${block_device} from MON ${mon_id}"
+log_info "Removing disk ${block_device} from MON $(get_mon_id)"
 log_info "Marking OSD.${osd_id} as out..."
 ${sudo_ceph} ceph osd out ${osd_id} || log_wrn "OSD already out or non-active"
 

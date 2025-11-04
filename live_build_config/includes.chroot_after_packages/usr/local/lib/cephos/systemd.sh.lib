@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+[[ -n "${LIB_SYSTEMD_IN:-}" ]] && return 0
+LIB_SYSTEMD_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
+function manage_systemd_unit_state()
+{
+  local state="$1"
+  local unit="$2"
+  log_verbose "Change '${unit}' state to '${state}'"
+  if ! sudo systemctl ${state} ${unit}
+  then
+    log_err "$(sudo systemctl status "${unit}" --no-pager)"
+    log_cry "Systemd unit '${unit}' got error when change state to '${state}'"
+  fi
+}
+
+function systemd_service_enabled()
+{
+  local service="$1"
+  local state
+  state=$(systemctl is-enabled "${service}.service" 2>/dev/null)
+  [[ "${state}" == "enabled" ]]
+}
+
+function systemd_service_started()
+{
+  local service="$1"
+  local state
+  state=$(systemctl is-active "${service}.service" 2>/dev/null)
+  [[ "${state}" == "active" ]]
+}
+
+function manage_systemd_service_state()
+{
+  local state="$1"
+  local service="$2"
+  log_verbose "Change service '${service}' state to '${state}'"
+
+  case "${state}" in
+    enable)
+      if systemd_service_enabled "${service}"
+      then
+        if systemd_service_started "${service}"
+        then
+          log_verbose "Service '${service}' already enabled and running — restarting"
+          manage_systemd_unit_state "restart" "${service}.service"
+        else
+          log_verbose "Service '${service}' enabled but not running — starting"
+          manage_systemd_unit_state "start" "${service}.service"
+        fi
+      else
+        log_verbose "Enabling and starting '${service}'"
+        sudo systemctl enable --now "${service}.service"
+      fi
+    ;;
+    disable)
+      if systemd_service_enabled "${service}"
+      then
+        if systemd_service_started "${service}"
+        then
+          log_verbose "Service '${service}' enabled and running — stopping before disable"
+          manage_systemd_unit_state "stop" "${service}.service"
+        fi
+        manage_systemd_unit_state "disable" "${service}.service"
+      else
+        if systemd_service_started "${service}"
+        then
+          log_verbose "Service '${service}' disabled but still running — stopping"
+          manage_systemd_unit_state "stop" "${service}.service"
+        else
+          log_verbose "Service '${service}' already disabled and inactive — nothing to do"
+        fi
+      fi
+    ;;
+    start)
+      if ! systemd_service_started "${service}"
+      then
+        manage_systemd_unit_state "start" "${service}.service"
+      fi
+    ;;
+    stop)
+      if systemd_service_started "${service}"
+      then
+        manage_systemd_unit_state "stop" "${service}.service"
+      fi
+    ;;
+  esac
+}

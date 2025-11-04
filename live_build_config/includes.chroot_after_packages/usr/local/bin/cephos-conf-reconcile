@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 [-hv]
 Update node configuration
 
 Options:
@@ -49,6 +45,7 @@ done
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+
 log_info "Synchronizing configurations between cluster nodes..."
 update_ceph_conf
 update_hosts

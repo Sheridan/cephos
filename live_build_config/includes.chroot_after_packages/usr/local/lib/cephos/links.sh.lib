@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_LINKS_IN:-}" ]] && return 0
+LIB_LINKS_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
 cephos_root="/cephos"
 is_new_cephos_version=0
 is_fresh_cephos_image=0
@@ -21,7 +26,7 @@ function check_cephos_is_new_version()
       if [[ "${current_tag}" != "${saved_tag}" ]]
       then
         log_info "New CephOS build detected: '${current_tag}' != '${saved_tag}'"
-        sudo cp -a "${current_tag}" "${cephos_saved_tag_file}"
+        sudo cp -a "${cephos_tag_file}" "${cephos_saved_tag_file}"
         is_new_cephos_version=1
       else
         log_info "Loaded same CephOS build"
@@ -35,7 +40,7 @@ function check_cephos_is_new_version()
       fi
     else
       log_info "First time CephOS booting"
-      sudo cp -a "${current_tag}" "${cephos_saved_tag_file}"
+      sudo cp -a "${cephos_tag_file}" "${cephos_saved_tag_file}"
     fi
   fi
 }

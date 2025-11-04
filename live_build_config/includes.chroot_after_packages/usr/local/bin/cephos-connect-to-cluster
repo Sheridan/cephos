@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
 . /usr/local/lib/cephos/ssh.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS Cluster Connection Script
+CephOS cluster connection script
 
 Options:
--n <cluster_node_ip> Specify any working cluster node IP address
--h                   Display this help message
--v                   Enable verbose output
+  -n <cluster_node_ip> Specify any working cluster node IP address
+  -h                   Display this help message
+  -v                   Enable verbose output
 
 Examples:
 # Connect to cluster
@@ -42,6 +40,7 @@ fi
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+check_hostname
 
 user_home=$(get_user_home "${current_user}")
 generate_ssh_key "${user_home}" "${current_user}"

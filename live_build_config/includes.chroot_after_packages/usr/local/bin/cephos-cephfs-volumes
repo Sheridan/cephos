@@ -1,27 +1,51 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 function print_group_subvolumes()
 {
-  local grp_name="$1"
-  for vol_name in $(subvolumes "${grp_name}")
+  local cephfs_name="$1"
+  local grp_name="$2"
+  local sv_bytes_used sv_path
+  for vol_name in $(subvolumes "${cephfs_name}" "${grp_name}")
   do
-    sv_bytes_used=$(subvolume_bytes_used "${grp_name}" "${vol_name}")
-    sv_path=$(subvolume_path "${grp_name}" "${vol_name}")
-    echo "  └── Subvol: ${vol_name} | Path: ${sv_path} | Used: ${sv_bytes_used}"
+    sv_bytes_used=$(subvolume_bytes_used "${cephfs_name}" "${grp_name}" "${vol_name}")
+    sv_path=$(subvolume_path "${cephfs_name}" "${grp_name}" "${vol_name}")
+    echo "      └── Subvol: ${vol_name} | Path: ${sv_path} | Used: ${sv_bytes_used}"
   done
 }
 
-echo "Group: ${cephfs_nogroup}"
-print_group_subvolumes ""
+function pool_replica_size()
+{
+  local cephfs_name="$1"
+  local pool_type="$2"
+  local size_type="$3"
+  ${sudo_ceph} ceph osd pool get ${cephfs_name}_${pool_type} ${size_type} -f json | jq -r ".${size_type}"
+}
 
-for grp_name in $(subvolumegroups)
+function pool_compression()
+{
+  local cephfs_name="$1"
+  local cmp_opt="$2"
+  ${sudo_ceph} ceph osd pool get ${cephfs_name}_data compression_${cmp_opt} -f json |  jq -r ".compression_${cmp_opt}"
+}
+
+for fs in $(cephfs_list)
 do
-  sg_bytes_used=$(subvolumegroup_bytes_used "${grp_name}")
-  echo "Group: ${grp_name} | Used: ${sg_bytes_used}"
-  print_group_subvolumes "${grp_name}"
+  echo "Filesystem: ${fs}"
+  echo "  Replicas: "
+  echo "    Data: $(pool_replica_size "${fs}" "data" "size") with minimum $(pool_replica_size "${fs}" "data" "min_size")"
+  echo "    Metadata: $(pool_replica_size "${fs}" "metadata" "size") with minimum $(pool_replica_size "${fs}" "metadata" "min_size")"
+  echo "    Compression: $(pool_compression "${fs}" "algorithm"), $(pool_compression "${fs}" "mode") with ratio $(pool_compression "${fs}" "required_ratio")"
+  echo "  Volumes:"
+  echo "    Group: ${cephfs_nogroup}"
+  print_group_subvolumes "${fs}" ""
+
+  for grp_name in $(subvolumegroups "${fs}")
+  do
+    sg_bytes_used=$(subvolumegroup_bytes_used "${fs}" "${grp_name}")
+    echo "    Group: ${grp_name} | Used: ${sg_bytes_used}"
+    print_group_subvolumes "${fs}" "${grp_name}"
+  done
 done

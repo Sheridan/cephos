@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_CEPH_IN:-}" ]] && return 0
+LIB_CEPH_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
+
+ceph_conf_dir="/etc/ceph"
+ceph_data_dir="/var/lib/ceph"
+ceph_main_conf="${ceph_conf_dir}/ceph.conf"
+
 function ceph_crash_up()
 {
   sudo mkdir -p "${ceph_data_dir}/crash/posted"
@@ -21,6 +31,11 @@ function get_ceph_hosts()
                       (.back  | capture("v2:(?<ip>[^:]+)") .ip // "-")]
             | @tsv' \
   | sort -u
+}
+
+function get_quorum_count()
+{
+  ${sudo_ceph} ceph quorum_status --format json | jq '.quorum_names | length'
 }
 
 function get_flat_ceph_hosts()
@@ -120,3 +135,7 @@ function osd_any_id()
 {
   pgrep -a ceph-osd | awk '{for (i=1;i<=NF;i++) if ($i=="--id") print $(i+1)}' | tail -n 1
 }
+
+export CLUSTER=ceph
+export CEPH_CLUSTER=ceph
+export CEPH_CONF="${ceph_main_conf}"

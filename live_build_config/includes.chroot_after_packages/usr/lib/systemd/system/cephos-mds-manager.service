@@ -1,0 +1,14 @@
+[Unit]
+Description=Automatic Ceph MDS scaling agent
+After=network-online.target ceph-mon.target
+Wants=ceph-mon.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/cephos-mds-manager.sh
+User=root
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

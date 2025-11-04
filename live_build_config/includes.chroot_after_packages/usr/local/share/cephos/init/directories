@@ -7,3 +7,4 @@
 /etc/udev/rules.d
 /var/lib/ceph
 /var/lib/cephos
+# /home/cephos/.ssh

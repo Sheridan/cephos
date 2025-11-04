@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_CEPHOS_IN:-}" ]] && return 0
+LIB_CEPHOS_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/ceph.sh.lib
+
+
 function check_hostname()
 {
-  if [[ -z "${no_hostname_check:-}" ]]
+  if is_local_host "${build_hostname}"
   then
-    if is_local_host "${build_hostname}"
-    then
-      log_cry "Change hostname please"
-    fi
+    log_cry "Change hostname please (use cephos-init-host)"
   fi
 }
 
@@ -45,12 +50,6 @@ function create_directories()
   set_fs_permissions
 }
 
-function activate_lvm_prescan()
-{
-  log_verbose "Enabling ceph-lvm-activate.service"
-  sudo systemctl enable ceph-lvm-activate.service
-}
-
 function update_hostname()
 {
   local node_hostname
@@ -85,44 +84,9 @@ function update_timezone()
   else
     log_info "Updating timezone to '${node_timezone}'..."
     sudo timedatectl set-timezone "${node_timezone}"
+    sudo timedatectl set-ntp yes
   fi
 }
 
-function prepare_ceph_data()
-{
-  log_verbose "Preparing data"
-  check_hostname
-
-  cephos_data_dir="/var/lib/cephos"
-  ceph_conf_dir="/etc/ceph"
-  ceph_data_dir="/var/lib/ceph"
-  ceph_main_conf="${ceph_conf_dir}/ceph.conf"
-
-  ceph_fsid=$(get_cluster_environment "fsid" "none")
-
-  cephfs_name="storage"
-  mon_id="$(hostname -s)"
-  mgr_id="$(hostname -s)"
-  mds_id="$(hostname -s)"
-  mon_data_dir="${ceph_data_dir}/mon/ceph-${mon_id}"
-  mgr_data_dir="${ceph_data_dir}/mgr/ceph-${mgr_id}"
-  mds_data_dir="${ceph_data_dir}/mds/ceph-${mds_id}"
-  osd_data_dir="${ceph_data_dir}/osd"
-
-  public_network=$(get_cluster_environment "public_network" "10.0.0.0/8")
-  cluster_network=$(get_cluster_environment "cluster_network" "10.0.0.0/8")
-  public_ip=$(get_node_environment "public_ip" "10.0.0.100")
-  cluster_ip=$(get_node_environment "cluster_ip" "10.0.0.101")
-
-
-  export CLUSTER=ceph
-  export CEPH_CLUSTER=ceph
-  export CEPH_CONF="${ceph_main_conf}"
-
-  sudo_ceph="sudo --preserve-env"
-
-  log_info "Ceph fsid: ${ceph_fsid}"
-  log_info "Ceph id: [mon:${mon_id}], [mgr:${mgr_id}], [mds:${mds_id}]"
-}
-
-prepare_ceph_data
+function get_mon_id() { hostname -s; }
+function get_mgr_id() { hostname -s; }

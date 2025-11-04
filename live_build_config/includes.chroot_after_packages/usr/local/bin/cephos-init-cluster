@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS Cluster Initialization Script
+CephOS cluster initialization script
 
 Options:
--h  Display this help message
--v  Enable verbose output
+  -h  Display this help message
+  -v  Enable verbose output
 EOF
 set -euo pipefail
 
 # --- options parse ---
+public_network=$(get_cluster_environment "public_network" "10.0.0.0/8")
+cluster_network=$(get_cluster_environment "cluster_network" "10.0.0.0/8")
+public_ip=$(get_node_environment "public_ip" "10.0.0.100")
 while getopts ":hv" opt
 do
   case ${opt} in
@@ -27,6 +27,7 @@ done
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+check_hostname
 
 ceph_fsid=$(uuidgen)
 set_cluster_environment "fsid" "${ceph_fsid}"
@@ -36,7 +37,7 @@ create_directories
 
 log_verbose "Creating configuration ${ceph_main_conf}"
 
-ceph_conf_add_to_list "mon_initial_members" "$(hostname -s)"
+ceph_conf_add_to_list "mon_initial_members" "$(get_mon_id)"
 ceph_conf_add_to_list "mon_host"            "${public_ip}"
 
 ceph_conf_set "global" "fsid"               "${ceph_fsid}"
@@ -54,6 +55,7 @@ ceph_conf_set "global" "osd_pool_default_pg_autoscale_mode" "on"
 ceph_conf_set "mon" "mon_lease"                               "8"
 ceph_conf_set "mon" "mon_osd_down_out_interval"               "$((60*30))"
 ceph_conf_set "mon" "mon_memory_autotune"                     "true"
+ceph_conf_set "mon" "mon_allow_pool_delete"                   "true"
 
 ceph_conf_set "global" "autotune_memory_target_ratio"          "0.6"
 ceph_conf_set "osd" "osd_memory_target_autotune"               "true"

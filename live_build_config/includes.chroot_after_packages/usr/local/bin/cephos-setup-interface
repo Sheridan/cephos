@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
 
 read -r -d '' help_text <<EOF

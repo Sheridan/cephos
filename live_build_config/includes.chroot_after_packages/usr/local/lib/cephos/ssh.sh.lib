@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_SSH_IN:-}" ]] && return 0
+LIB_SSH_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
 ssh_key_type="ed25519"
 
 function generate_ssh_key()
@@ -85,3 +90,18 @@ function exec_ssh()
   ssh -t ${user}@${host} "${cmd}"
   log_verbose_delimiter
 }
+
+function prepare_ssh_cephos()
+{
+  generate_ssh_key "${build_user_home}" "${build_user}"
+}
+
+function exec_ssh_cephos()
+{
+  local host="$1"
+  local cmd="${@:2}"
+  spread_ssh_key "${build_user_home}" "${build_user}" "${host}"
+  exec_ssh "${host}" "${build_user}" "${cmd}"
+}
+
+prepare_ssh_cephos

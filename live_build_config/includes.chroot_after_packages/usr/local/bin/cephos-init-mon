@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS MON Initialization Script
+CephOS MON initialization script
 
 Options:
--n  Cluster node when connecting to cluster
-     If unset - generates new monmap
-     Do not use manually (used internally from cephos-connect-to-cluster)
--h  Display this help message
--v  Enable verbose output
+  -n  Cluster node when connecting to cluster
+      If unset - generates new monmap
+      Do not use manually (used internally from cephos-connect-to-cluster)
+  -h  Display this help message
+  -v  Enable verbose output
 EOF
 set -euo pipefail
 
 # --- options parse ---
 cluster_node=""
+ceph_fsid=$(get_cluster_environment "fsid" "none")
+mon_id="$(get_mon_id)"
+mon_data_dir="${ceph_data_dir}/mon/ceph-${mon_id}"
+public_ip=$(get_node_environment "public_ip" "10.0.0.100")
 while getopts ":n:hv" opt
 do
   case ${opt} in
@@ -54,7 +57,7 @@ then
   fi
   set_fs_permissions
 
-  log_info "Creating directories ${mon_data_dir}"
+  log_verbose "Creating directories ${mon_data_dir}"
   sudo mkdir -p "${mon_data_dir}"
   set_fs_permissions
 

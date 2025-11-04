@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -d <block_device>
-Example: $0 -d /dev/sdb
+Script for make swap partition
+
+Options:
+  -d <block_device> Block device for swap
+  -h                Display this help message
+  -v                Enable verbose output
 EOF
 set -euo pipefail
 # --- functions ---

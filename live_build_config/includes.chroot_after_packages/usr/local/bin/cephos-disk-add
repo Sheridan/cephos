@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/blockdev.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -d <block_device>
 This script appends a block device to a Ceph cluster by creating a new OSD (Object Storage Daemon).
 
 Options:
@@ -49,6 +46,7 @@ fi
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+check_hostname
 
 if disk_already_in_ceph "${block_device}"
 then
@@ -58,7 +56,7 @@ fi
 print_device_info "${block_device}"
 ask_confirmation "This operation will destroy all data on disk ${block_device}. Continue?"
 
-log_info "Appending disk ${block_device} to MON ${mon_id}"
+log_info "Appending disk ${block_device} to MON $(get_mon_id)"
 
 purge_device "${block_device}"
 
@@ -72,7 +70,8 @@ ${sudo_ceph} ceph-volume \
   --data "${block_device}" \
   --objectstore bluestore
 set_fs_permissions
-activate_lvm_prescan
+
+manage_systemd_service_state "enable" "ceph-lvm-activate"
 
 log_info "OSD successfully created on ${block_device}"
 

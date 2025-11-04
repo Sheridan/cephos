@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
 . /usr/local/lib/cephos/ssh.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS Cluster Disconnection Script
+CephOS cluster disconnection script
 
 Options:
 -h: Display this help message
@@ -16,10 +14,6 @@ Options:
 EOF
 set -euo pipefail
 # --- functions ---
-function get_local_mds_gid()
-{
-  ${sudo_ceph} ceph fs dump -f json | jq "[.filesystems[].mdsmap.info[], .standbys[]] | flatten | map(select(.name==\"${mds_id}\")) | .[].gid"
-}
 function force_flag()
 {
   if (( force ))
@@ -32,6 +26,8 @@ function force_flag()
 # --- functions ---
 # --- options parse ---
 force=0
+mon_id="$(get_mon_id)"
+mgr_id="$(get_mgr_id)"
 while getopts ":fhv" opt
 do
   case ${opt} in
@@ -53,11 +49,7 @@ do
   echo "y" | cephos-disk-remove $(verbose_flag) -d "${block_device}" $(force_flag)
 done < <(get_local_osd_disks)
 
-log_info "Removing mds '${mds_id}'"
-mds_gid="$(get_local_mds_gid)"
-manage_systemd_service_state "disable" "ceph-mds@${mds_id}"
-${sudo_ceph} ceph mds fail "${mds_gid}" || true
-${sudo_ceph} ceph mds rm   "${mds_gid}" || true
+manage_systemd_service_state "disable" "cephos-mds-manager"
 
 log_info "Removing mgr '${mgr_id}'"
 manage_systemd_service_state "disable" "ceph-mgr@${mgr_id}"

@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -n <ratio> -b <ratio> -f <ratio> [-hv]
 Set cluster fill ratios:
   nearfull-ratio < backfillfull-ratio < full-ratio
 

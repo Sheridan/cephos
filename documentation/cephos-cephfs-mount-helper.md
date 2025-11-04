@@ -5,6 +5,7 @@ The `cephos-cephfs-mount-helper` script is a CephFS mount helper that prepares a
 
 ## Options
 - `-u <name>`: User name (required)
+- `-f <filesystem>`: CephFS name (default: `storage`)
 - `-g <subvolume_group>`: CephFS subvolume group (default: `_nogroup`)
 - `-s <subvolume>`: CephFS subvolume (required)
 - `-p <mountpoint>`: Client host mountpoint (required)
@@ -20,6 +21,7 @@ cephos-cephfs-mount-helper -u myuser -g mygroup -s mysubvolume -p /mnt/cephfs -o
 
 ## Functionality
 1. Validates required options (username, mountpoint, output file)
+1. Verifies that the specified CephFS filesystem exists
 1. Checks if the specified Ceph user exists
 1. Verifies that the subvolume group and subvolume exist
 1. Creates a minimal ceph.conf configuration file
@@ -33,11 +35,14 @@ cephos-cephfs-mount-helper -u myuser -g mygroup -s mysubvolume -p /mnt/cephfs -o
 
 ## Validation
 - Ensures username is specified and not "admin"
+- Verifies CephFS filesystem exists
 - Verifies Ceph user exists
 - Checks subvolume group and subvolume existence
 
 ## Configuration Files Generated
 - `ceph.conf`: Minimal Ceph configuration with FSID and monitor hosts
+- `${username}.secret`: Exported Ceph user secret key
+- `ceph.client.${username}.keyring`: Ceph client keyring file
 - `mount.sh`: Script for mounting the CephFS subvolume
 - `fstab.content`: fstab entry for the mount
 - `*.mount`: systemd mount unit file

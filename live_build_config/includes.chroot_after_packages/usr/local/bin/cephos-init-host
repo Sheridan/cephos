@@ -1,27 +1,24 @@
 #!/usr/bin/env bash
 
-no_hostname_check=true
-
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/network.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS Host Initialization Script
+CephOS host initialization script
 
 Options:
--n <fqdn>             (Required) Specify the Fully Qualified Domain Name (FQDN) for the host
--P <public_network>   (Required) Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
--C <cluster_network>  (Optional) Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
-                                 Default: public network
--p <public_ip>        (Required) Specify the public IP address for this host
--c <cluster_ip>       (Optional) Specify the cluster IP address for this host
-                                 Default: public IP
--z <timezone>         (Optional) Specify the host timezone
-                                 Default: Etc/UTC
--h                    Display this help message
--v                    Enable verbose output
+  -n <fqdn>             (Required) Specify the Fully Qualified Domain Name (FQDN) for the host
+  -P <public_network>   (Required) Specify the public network in CIDR notation (e.g., 10.10.0.0/24)
+  -C <cluster_network>  (Optional) Specify the cluster network in CIDR notation (e.g., 10.20.0.0/24)
+                                  Default: public network
+  -p <public_ip>        (Required) Specify the public IP address for this host
+  -c <cluster_ip>       (Optional) Specify the cluster IP address for this host
+                                  Default: public IP
+  -z <timezone>         (Optional) Specify the host timezone
+                                  Default: Etc/UTC
+  -h                    Display this help message
+  -v                    Enable verbose output
 
 Examples:
 # Initialize host with FQDN
@@ -58,8 +55,7 @@ function set_timezone()
 
 function enable_init_service()
 {
-  manage_systemd_unit_state "enable" "cephos-host-init.service"
-  sudo systemctl restart cephos-host-init.service
+  manage_systemd_service_state "enable" "cephos-host-init"
 }
 # --- functions ---
 # --- options parse ---

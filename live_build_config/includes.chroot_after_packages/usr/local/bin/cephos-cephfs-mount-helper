@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -u user_name -g subvolume_group -s subvolume -p mountpoint -o tar_archive_name [-hv]
 CephFS mount helper
 
 Options:
   -u <name>            User name
+  -f <filesystem>      CephFS name (default '${default_cephfs_name}')
   -g <subvolume_group> CephFS subvolume group (default _nogroup)
   -s <subvolume>       CephFS subvolume
   -p <mountpoint>      Client host mountpoint
@@ -23,13 +20,13 @@ set -euo pipefail
 # --- functions ---
 function check_exists_vol()
 {
-  if ! subvolumegroup_exists "${grp_name}"
+  if ! subvolumegroup_exists "${cephfs_name}" "${grp_name}"
   then
-    log_cry "Subvolume group ${grp_name} does not exist"
+    log_cry "Subvolume group ${grp_name} does not exist in CephFS '${cephfs_name}'"
   fi
-  if ! subvolume_exists "${grp_name}" "${vol_name}"
+  if ! subvolume_exists "${cephfs_name}" "${grp_name}" "${vol_name}"
   then
-    log_cry "Subvolume [${grp_name}:${vol_name}] does not exist"
+    log_cry "Subvolume [${cephfs_name}:${grp_name}:${vol_name}] does not exist"
   fi
 }
 
@@ -46,7 +43,7 @@ function process_template()
 
   log_info "Process template '${template_file}' to '${output_file}'"
 
-  export ceph_hosts mountpoint username cephfs_name cephfs_path cephfs_name
+  export ceph_hosts mountpoint username cephfs_name cephfs_path
 
   envsubst < "${template_file}" > "${output_file}"
 }
@@ -84,7 +81,9 @@ grp_name="_nogroup"
 vol_name=""
 mountpoint=""
 output_file=""
-while getopts ":o:p:g:s:u:hv" opt
+cephfs_name="${default_cephfs_name}"
+ceph_fsid=$(get_cluster_environment "fsid" "none")
+while getopts ":f:o:p:g:s:u:hv" opt
 do
   case ${opt} in
     g) grp_name="${OPTARG}"    ;;
@@ -92,6 +91,7 @@ do
     u) username="${OPTARG}"    ;;
     p) mountpoint="${OPTARG}"  ;;
     o) output_file="${OPTARG}" ;;
+    f) cephfs_name="${OPTARG}" ;;
     h) usage     ;;
     v) verbose=1 ;;
    \?) wrong_opt "Unknown option -${OPTARG}"              ;;
@@ -119,6 +119,11 @@ then
   wrong_opt "Do not use admin user!"
 fi
 
+if ! cephfs_exists "${cephfs_name}"
+then
+  log_cry "CephFS '${cephfs_name}' does not exists"
+fi
+
 if ! cephfs_user_exists "${username}"
 then
   log_cry "Ceph user ${username} does not exist. Please use the cephos-cephfs-user script first"
@@ -129,7 +134,7 @@ check_user "${build_user}"
 
 check_exists_vol
 temp_dir=$(mktemp -d)
-sv_path=$(subvolume_path "${grp_name}" "${vol_name}")
+sv_path=$(subvolume_path "${cephfs_name}" "${grp_name}" "${vol_name}")
 systemd_unit_filename=$(mountpoint_to_unit_name "${mountpoint}")
 ceph_hosts=$(get_flat_ceph_hosts)
 

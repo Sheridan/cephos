@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
-no_hostname_check=true
-
-. /usr/local/lib/cephos/base.sh.lib
 . /usr/local/lib/cephos/links.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
+
+log_info "--------------------------------------------------------- boot ---------------------------------------------------------"
 
 log_info "Initialazing..."
 check_cephos_is_new_version

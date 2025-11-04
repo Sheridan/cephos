@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_BLOCKDEV_IN:-}" ]] && return 0
+LIB_BLOCKDEV_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
 function clean_lvm_labels()
 {
   local block_device="$1"

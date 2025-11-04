@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 <-a|-d|-D> -u user_name -g subvolume_group -s subvolume [-hv]
 CephFS user management
 
 Options:
@@ -14,6 +11,7 @@ Options:
   -d                   Delete user subvolume caps
   -D                   Delete user
   -u <name>            User name
+  -f <filesystem>      CephFS name (default '${default_cephfs_name}')
   -g <subvolume_group> CephFS subvolume group (default ${cephfs_nogroup})
   -s <subvolume>       CephFS subvolume
   -h                   Show this help message and exit
@@ -23,19 +21,19 @@ set -euo pipefail
 # --- functions ---
 function check_exists_vol()
 {
-  if ! subvolumegroup_exists "${grp_name}"
+  if ! subvolumegroup_exists "${cephfs_name}" "${grp_name}"
   then
-    log_cry "Subvolume group ${grp_name} does not exist"
+    log_cry "Subvolume group '${grp_name}' does not exist in CephFS '${cephfs_name}'"
   fi
-  if ! subvolume_exists "${grp_name}" "${vol_name}"
+  if ! subvolume_exists "${cephfs_name}" "${grp_name}" "${vol_name}"
   then
-    log_cry "Subvolume [${grp_name}:${vol_name}] does not exist"
+    log_cry "Subvolume [${cephfs_name}:${grp_name}:${vol_name}] does not exist"
   fi
 }
 
 function make_caps()
 {
-  cephfs_user_subvolume_caps "${username}" "${grp_name}" "${vol_name}" "${action}"
+  cephfs_user_subvolume_caps "${username}" "${cephfs_name}" "${grp_name}" "${vol_name}" "${action}"
 }
 # --- functions ---
 # --- options parse ---
@@ -43,15 +41,17 @@ action="add"
 username=""
 grp_name="${cephfs_nogroup}"
 vol_name=""
-while getopts ":g:s:u:adDhv" opt
+cephfs_name="${default_cephfs_name}"
+while getopts ":f:g:s:u:adDhv" opt
 do
   case ${opt} in
-    a) action="add" ;;
-    d) action="del" ;;
-    D) action="DEL" ;;
-    g) grp_name="${OPTARG}" ;;
-    s) vol_name="${OPTARG}" ;;
-    u) username="${OPTARG}" ;;
+    a) action="add"            ;;
+    d) action="del"            ;;
+    D) action="DEL"            ;;
+    f) cephfs_name="${OPTARG}" ;;
+    g) grp_name="${OPTARG}"    ;;
+    s) vol_name="${OPTARG}"    ;;
+    u) username="${OPTARG}"    ;;
     h) usage     ;;
     v) verbose=1 ;;
    \?) wrong_opt "Unknown option -${OPTARG}"              ;;
@@ -72,6 +72,11 @@ fi
 if [[ "$username" == "admin" ]]
 then
   wrong_opt "Do not use admin user!"
+fi
+
+if ! cephfs_exists "${cephfs_name}"
+then
+  log_cry "CephFS '${cephfs_name}' does not exists"
 fi
 # --- options parse ---
 # --- main ---

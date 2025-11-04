@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/systemd.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+Initialize a CephOS MDS manager.
+
+Options:
+  -h  Show this help message and exit
+  -v  Enable verbose mode
+EOF
+set -euo pipefail
+
+# --- options parse ---
+while getopts ":hv" opt
+do
+  case ${opt} in
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
+  esac
+done
+# --- options parse ---
+# --- main ---
+check_user "${build_user}"
+
+log_info "Initializing CephOS MDS manager at $(hostname -s)"
+
+manage_systemd_service_state "enable" "cephos-mds-manager"

@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+[[ -n "${LIB_MDS_IN:-}" ]] && return 0
+LIB_MDS_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/ceph.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
+
+mds_root_dir="${ceph_data_dir}/mds"
+
+function get_fs_count()
+{
+  ${sudo_ceph} ceph mds stat -f json | jq -r '.fsmap.filesystems | length'
+}
+
+function get_active_mds_count()
+{
+  ${sudo_ceph} ceph mds stat -f json \
+    | jq -r '[.fsmap.filesystems[].mdsmap.info[]?, .fsmap.standbys[]?]
+              | map(select(.state | startswith("up:")))
+              | length'
+}
+
+function get_local_mds_ids()
+{
+  systemctl list-units --type=service --no-pager  | awk '/ceph-mds@.*\.service/ {print $1}' | sed 's/ceph-mds@\([^.]*\)\.service/\1/'
+}
+
+function get_local_active_count()
+{
+  systemctl list-units --type=service --state=active --no-pager | grep -c "ceph-mds@"
+}
+
+function get_local_mds_gid()
+{
+  local mds_id="$1"
+  ${sudo_ceph} ceph fs dump -f json | jq "[.filesystems[].mdsmap.info[], .standbys[]] | flatten | map(select(.name==\"${mds_id}\")) | .[].gid"
+}
+
+function make_mds_id()
+{
+  local idx="$1"
+  echo "$(hostname -s).${idx}"
+}
+
+function make_mds_data_path()
+{
+  local mds_id="$1"
+  echo "${mds_root_dir}/ceph-${mds_id}"
+}
+
+function start_mds()
+{
+  local mds_id="$1"
+  log_info "Starting MDS ${mds_id}"
+  mds_data_path="$(make_mds_data_path "${mds_id}")"
+  mds_key="${mds_data_path}/keyring"
+  if [[ ! -d "$mds_data_path" ]]
+  then
+    log_info "Creating directories ${mds_data_path}"
+    mkdir -p "$mds_data_path"
+    set_fs_permissions
+  fi
+
+  if [[ ! -f "$mds_key" ]]
+  then
+    log_info "Creating key ${mds_key}"
+    ${sudo_ceph} ceph auth get-or-create mds.${mds_id} mon 'allow profile mds' mgr 'allow profile mds' osd 'allow rwx' mds 'allow *' -o ${mds_key}
+    set_fs_permissions
+  fi
+
+  manage_systemd_service_state "start" "ceph-mds@${mds_id}"
+}
+
+function stop_mds()
+{
+  local idx="$1"
+  local mds_id mds_gid
+  mds_id="$(make_mds_id "${idx}")"
+
+  log_info "Stopping MDS ${mds_id}"
+
+  ${sudo_ceph} ceph mds fail ${mds_id} || log_wrn "Fail set mds '${mds_id}' to 'fail'"
+  manage_systemd_service_state "stop" "ceph-mds@${mds_id}" || log_wrn "Fail stop mds '${mds_id}' service"
+
+  mds_gid="$(get_local_mds_gid "${mds_id}")"
+  if [[ -n "${mds_gid}" ]]
+  then
+    sleep 4
+    ${sudo_ceph} ceph mds rm ${mds_gid} || log_wrn "Fail rm mds '${mds_id}' (${mds_gid})"
+  fi
+}

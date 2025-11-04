@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 . /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 [-hv]
-Initialize a Ceph Manager (MGR) node.
+Initialize a Ceph Manager (MGR) service
 
 Options:
   -h  Show this help message and exit
@@ -16,6 +13,8 @@ EOF
 set -euo pipefail
 
 # --- options parse ---
+mgr_id="$(get_mgr_id)"
+mgr_data_dir="${ceph_data_dir}/mgr/ceph-${mgr_id}"
 while getopts ":hv" opt
 do
   case ${opt} in
@@ -29,13 +28,13 @@ done
 # --- main ---
 check_user "${build_user}"
 
-log_info "Initializing MGR ${mgr_id} with [fsid:${ceph_fsid}] and main configuration file ${ceph_main_conf}"
+log_info "Initializing MGR ${mgr_id} with main configuration file ${ceph_main_conf}"
 
 if ! sudo test -d "${mgr_data_dir}"
 then
   log_info "MGR not found on this host, creating new MGR"
 
-  log_info "Creating directories ${mgr_data_dir}"
+  log_verbose "Creating directories ${mgr_data_dir}"
   sudo mkdir -p "${mgr_data_dir}"
 
   log_info "Creating keys"

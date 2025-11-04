@@ -3,7 +3,6 @@
 . live_build_config/includes.chroot_after_packages/usr/local/lib/cephos/base.sh.lib
 
 read -r -d '' help_text <<EOF
-  Usage: $0 -s <cluster_conf_string> [-m <memory>] [-d <disk_size>] [-c <cpus>] [-n <hdds>] [-r]
   Options:
     -s: VM cluster string
         String format: 'name:flash,flash2...;name1:flash3,flash4,flash5...' etc.

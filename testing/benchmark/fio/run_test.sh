@@ -4,7 +4,6 @@
 use_logfile=0
 
 read -r -d '' help_text <<EOF
-Usage: $0 [-c config] [-m CephFS directory] [-o results directory]
 
  Examples:
     $0 -c stress_test.fio -m /mnt/cephfs/test -o /data/fio_results

@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+. /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
+
+read -r -d '' help_text <<EOF
+CephFS replication size manager
+
+Options:
+  -f <name>       CephFS name (default: '${default_cephfs_name}')
+  -S <size>       CephFS replication size (minimum 2)
+  -s <min_size>   CephFS minimum replication size (default: size-1, minimum 1)
+  -h              Show this help message and exit
+  -v              Enable verbose mode
+EOF
+set -euo pipefail
+# --- functions ---
+# --- functions ---
+# --- options parse ---
+cephfs_name="${default_cephfs_name}"
+size=""
+min_size=""
+while getopts ":f:S:s:hv" opt
+do
+  case ${opt} in
+    f) cephfs_name="${OPTARG}" ;;
+    S) size="${OPTARG}"        ;;
+    s) min_size="${OPTARG}"    ;;
+    h) usage     ;;
+    v) verbose=1 ;;
+   \?) wrong_opt "Unknown option -${OPTARG}"              ;;
+    :) wrong_opt "Option -${OPTARG} requires an argument" ;;
+  esac
+done
+
+if [[ -z "$size" ]]
+then
+  wrong_opt "Replication size not specified (-S)"
+fi
+
+if [[ -z "$min_size" ]]
+then
+  min_size=$(( size - 1 ))
+fi
+
+if (( size < 2 ))
+then
+  wrong_opt "Replication size must be at least 2 (-S)"
+fi
+
+if (( min_size < 1 ))
+then
+  wrong_opt "Minimum replication size must be at least 1 (-s)"
+fi
+
+if (( size <= min_size ))
+then
+  wrong_opt "Replication size must be greater than minimum size"
+fi
+
+if ! cephfs_exists "${cephfs_name}"
+then
+  log_cry "CephFS '${cephfs_name}' does not exist"
+fi
+# --- options parse ---
+# --- main ---
+check_user "${build_user}"
+
+for pool in "data" "metadata"
+do
+  log_verbose "Changing replication size for '${cephfs_name}' to ${size} (min_size: ${min_size})"
+  ${sudo_ceph} ceph osd pool set ${cephfs_name}_${pool} size ${size}
+  ${sudo_ceph} ceph osd pool set ${cephfs_name}_${pool} min_size ${min_size}
+done

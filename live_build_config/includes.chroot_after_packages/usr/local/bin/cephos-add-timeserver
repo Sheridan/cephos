@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 
 read -r -d '' help_text <<EOF
-CephOS Time Server Add Script
+CephOS Time Server appending
 
 Options:
--s <host>  Specify the time server host
--p <host>  Specify the time servers pool
--h         Display this help message
--v         Enable verbose output
+  -s <host>  Specify the time server host
+  -p <host>  Specify the time servers pool
+  -h         Display this help message
+  -v         Enable verbose output
 
 Examples:
 $0 -p 0.pool.ntp.org
@@ -44,7 +44,7 @@ done
 
 if [[ -z "$time_server" || -z "$time_pool" ]]
 then
-  wrong_opt "Options not specified"
+  wrong_opt "Options -s or -p not specified"
 fi
 # --- options parse ---
 # --- main ---
@@ -61,6 +61,6 @@ then
 fi
 
 manage_systemd_service_state "enable" "chrony"
-sudo timedatectl set-ntp yes
+
 
 beep_done

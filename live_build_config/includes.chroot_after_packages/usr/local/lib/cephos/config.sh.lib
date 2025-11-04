@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_CONFIG_IN:-}" ]] && return 0
+LIB_CONFIG_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
+cephos_data_dir="/var/lib/cephos"
+
 # ---=---
 function write_to_ini()
 {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
+. /usr/local/lib/cephos/systemd.sh.lib
 
 # --- functions ---
 function is_snmp()
@@ -32,13 +32,13 @@ mode="snmp_v2c"
 snmp_community="public"
 port=""
 description="UPS"
-admin_password=$(gen_random_password 8)
-mon_password=$(gen_random_password 8)
+admin_password=$(gen_random_string 8)
+mon_password=$(gen_random_string 8)
 low_battery_percent="30"
 
 read -r -d '' help_text <<EOF
-Usage: $0 -m <mode> -c <snmp_community> -p <port> -d <desc> -l <low_battery_%>
 Sets up and starts power monitoring using NUT services.
+
 Options:
   -l <low_battery_%>  Specify the low battery percent (default: '${low_battery_percent}')
   -m <mode>           Specify the target mode (default: '${mode}')

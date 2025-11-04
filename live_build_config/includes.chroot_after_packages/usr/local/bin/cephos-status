@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
 . /usr/local/lib/cephos/ssh.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
 CephOS Cluster Status Script
@@ -35,24 +32,20 @@ function show()
   if (( (as_verbose && verbose) || !as_verbose ))
   then
     local no_empty_lines="grep -Ev '^[[:space:]]*$'"
-    local fill_cmd="${sudo_ceph} ${cmd} | ${no_empty_lines}"
+    local full_cmd="${sudo_ceph} ${cmd} | ${no_empty_lines}"
 
     log_delimiter
     log_info "${title} (${cmd})"
-    eval "${fill_cmd}"
+    eval "${full_cmd}"
     if (( run_on_all_nodes ))
     then
-      local user_home
-      user_home="$(get_user_home "${build_user}")"
-      generate_ssh_key "${user_home}" "${build_user}"
       mapfile -t ceph_hosts < <(get_ceph_hosts)
       for line in "${ceph_hosts[@]}"
       do
         read -r node_name public_ip cluster_ip <<< "${line}"
         if ! is_local_host "${node_name}"
         then
-          spread_ssh_key "${user_home}" "${build_user}" "${public_ip}"
-          exec_ssh "${public_ip}" "${build_user}" "${fill_cmd}"
+          exec_ssh_cephos "${public_ip}" "${full_cmd}"
         fi
       done
     fi
@@ -73,6 +66,10 @@ done
 # --- options parse ---
 # --- main ---
 check_user "${build_user}"
+check_hostname
+
+ceph_fsid=$(get_cluster_environment "fsid" "none")
+log_info "Ceph fsid: ${ceph_fsid}"
 
 show "Time synchronization sources"  "chronyc sources"             1 0
 show "Time synchronization tracking" "chronyc tracking"            1 0
@@ -95,4 +92,5 @@ show "Placement Group statistics" "ceph pg stat"                   0 0
 show "Placement Group summary"    "ceph pg dump summary"           0 0
 show "Monitor statistics"         "ceph mon stat"                  0 0
 show "CephFS filesystem status"   "ceph fs status"                 0 0
+show "MDS status"                 "ceph mds stat"                  0 0
 show "Cluster summary"            "ceph -s"                        0 0

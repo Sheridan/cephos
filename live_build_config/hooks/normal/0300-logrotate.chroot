@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-. /usr/local/lib/cephos/base.sh.lib
+
+. /usr/local/lib/cephos/systemd.sh.lib
 verbose=1
 
 set -e

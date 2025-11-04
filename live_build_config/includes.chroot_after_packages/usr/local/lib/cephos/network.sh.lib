@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+[[ -n "${LIB_NETWORK_IN:-}" ]] && return 0
+LIB_NETWORK_IN=1
+
+. /usr/local/lib/cephos/base.sh.lib
+
 function interface_exists()
 {
   local interface_name="$1"

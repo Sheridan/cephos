@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/ssh.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 [-hv]
 Shutdown whole cluster
 
 Options:
@@ -25,15 +21,12 @@ function shutdown_nodes()
     read -r node_name public_ip cluster_ip <<< "${line}"
     if ! is_local_host "${node_name}"
     then
-      spread_ssh_key "${user_home}" "${current_user}" "${public_ip}"
-      exec_ssh "${public_ip}" "${current_user}" "sudo poweroff"
+      exec_ssh_cephos "${public_ip}" "sudo poweroff"
     fi
   done
 }
 # --- functions ---
 # --- options parse ---
-current_user="${build_user}"
-user_home=$(get_user_home "${current_user}")
 while getopts ":hv" opt
 do
   case ${opt} in
@@ -47,7 +40,7 @@ done
 # --- main ---
 check_user "${build_user}"
 ask_confirmation "This script will shut down all Ceph cluster nodes. Continue?"
-generate_ssh_key "${user_home}" "${current_user}"
+
 shutdown_nodes
 log_info "Shutdown self"
 sudo poweroff

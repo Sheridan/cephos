@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/cephos/base.sh.lib
-. /usr/local/lib/cephos/config.sh.lib
-. /usr/local/lib/cephos/ceph.sh.lib
-. /usr/local/lib/cephos/cephos.sh.lib
 . /usr/local/lib/cephos/cephfs.sh.lib
+. /usr/local/lib/cephos/cephos.sh.lib
 
 read -r -d '' help_text <<EOF
-Usage: $0 -m mode -a algorithm -r ratio [-hv]
 CephFS volumes compression manager
 
 Options:
+  -f <filesystem>      CephFS name (default '${default_cephfs_name}')
   -m <mode>            Compression mode (default 'none')
   -a <algorithm>       Compression algorithm (default 'snappy')
   -r <ratio>           Compression required ratio (default '0.875')
@@ -36,23 +33,18 @@ function compression_values()
   ${sudo_ceph} ceph tell osd.${osdid} config help bluestore_compression_${option} | jq -r '.option.enum_values[]'
 }
 
-function compression_modes()
-{
-  compression_values "mode"
-}
-
-function compression_algorithms()
-{
-  compression_values "algorithm"
-}
+function compression_modes()      { compression_values "mode"     ; }
+function compression_algorithms() { compression_values "algorithm"; }
 # --- functions ---
 # --- options parse ---
 compression_algorithm="snappy"
 compression_mode="none"
 required_ratio="0.875"
-while getopts ":r:a:m:hv" opt
+cephfs_name="${default_cephfs_name}"
+while getopts ":f:r:a:m:hv" opt
 do
   case ${opt} in
+    f) cephfs_name="${OPTARG}"           ;;
     m) compression_mode="${OPTARG}"      ;;
     a) compression_algorithm="${OPTARG}" ;;
     r) required_ratio="${OPTARG}"        ;;
@@ -64,6 +56,11 @@ do
 done
 
 data_pool="${cephfs_name}_data"
+
+if ! cephfs_exists "${cephfs_name}"
+then
+  log_cry "CephFS '${cephfs_name}' does not exists"
+fi
 # --- options parse ---
 
 # --- main ---

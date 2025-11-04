@@ -77,12 +77,6 @@ Attention! The usual warning: back up the data from your flash drive first, othe
    cephos-disk-add -v -d /dev/vdc
    ```
 
-1. **Initialize CephFS**
-   Set up the Ceph File System:
-   ```bash
-   cephos-init-cephfs -v
-   ```
-
 1. **Enable cluster metrics**
    Initialize monitoring and metric collection:
    ```bash
@@ -117,12 +111,6 @@ Attention! The usual warning: back up the data from your flash drive first, othe
    cephos-disk-add -v -d /dev/vdc
    ```
 
-1. **Initialize Metadata Server (MDS)**
-   When the node should also participate in CephFS:
-   ```bash
-   cephos-init-mds -v
-   ```
-
 1. **Enable metrics collection**
    Ensure monitoring and telemetry are active:
    ```bash
@@ -130,12 +118,18 @@ Attention! The usual warning: back up the data from your flash drive first, othe
    ```
 
 # Finally
-Run script `cephos-conf-sync` on any Ceph node to synchronize sensitive data between Ceph nodes
+1. **Configuration sync**
+   Run script `cephos-conf-sync` on any Ceph node to synchronize sensitive data between Ceph nodes
+1. **Initialize CephFS**
+   Set up the Ceph File System:
+   ```bash
+   cephos-cephfs-manager -a -v -f 'storage'
+   ```
 
 # Managing cephfs
 1. Use the dashboard to create groups and subvolumes in CephFS
-2. Use `cephos-cephfs-user` to create a user and assign them to a CephFS group/subvolume
-3. Use `cephos-cephfs-mount-helper` to create a tar archive containing everything needed for mounting, including:
+1. Use `cephos-cephfs-user` to create a user and assign them to a CephFS group/subvolume
+1. Use `cephos-cephfs-mount-helper` to create a tar archive containing everything needed for mounting, including:
    - mount.sh command
    - fstab entries
    - systemd.mount/systemd.automount units
