@@ -16,11 +16,20 @@ function clocks_skew()
 {
   log_delimiter
   log_info "Cluster nodes clocks skew"
-  ${sudo_ceph} ceph tell mon time-sync-status -f json | jq -r '
-  .time_skew_status
-  | to_entries[]
-  | "\(.key)\n  latency: \(.value.latency)\n  skew: \(.value.skew)"
-  '
+
+  local output
+  output="$(${sudo_ceph} ceph tell mon time-sync-status -f json 2>/dev/null)"
+
+  if echo "$output" | jq -e '.time_skew_status' >/dev/null 2>&1
+  then
+    echo "$output" | jq -r '
+      .time_skew_status
+      | to_entries[]
+      | "\(.key)\n  latency: \(.value.latency)\n  skew: \(.value.skew)"
+    '
+  else
+    log_info "All node clocks are sufficiently synchronized"
+  fi
 }
 
 function show()
